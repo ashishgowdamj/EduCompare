@@ -90,21 +90,33 @@ class CollegeAPITester:
     def test_search_by_name(self):
         """Test searching colleges by name"""
         try:
-            # Search for IIT colleges
-            response = self.session.get(f"{self.base_url}/colleges/search?q=IIT")
+            # Search for IIT colleges using full name
+            response = self.session.get(f"{self.base_url}/colleges/search?q=Indian Institute of Technology")
             if response.status_code == 200:
                 data = response.json()
                 colleges = data.get("colleges", [])
-                iit_found = any("IIT" in college["name"] or "Indian Institute of Technology" in college["name"] 
-                              for college in colleges)
+                iit_found = any("Indian Institute of Technology" in college["name"] for college in colleges)
                 if iit_found:
-                    self.log_test("Search by name (IIT)", True, f"Found {len(colleges)} IIT colleges")
+                    self.log_test("Search by name (Indian Institute of Technology)", True, f"Found {len(colleges)} IIT colleges")
                 else:
-                    self.log_test("Search by name (IIT)", False, "No IIT colleges found in search results")
+                    self.log_test("Search by name (Indian Institute of Technology)", False, "No IIT colleges found in search results")
             else:
-                self.log_test("Search by name (IIT)", False, f"Status code: {response.status_code}")
+                self.log_test("Search by name (Indian Institute of Technology)", False, f"Status code: {response.status_code}")
+
+            # Test search with partial name
+            response = self.session.get(f"{self.base_url}/colleges/search?q=Technology")
+            if response.status_code == 200:
+                data = response.json()
+                colleges = data.get("colleges", [])
+                tech_found = any("Technology" in college["name"] for college in colleges)
+                if tech_found:
+                    self.log_test("Search by name (Technology)", True, f"Found {len(colleges)} colleges with 'Technology'")
+                else:
+                    self.log_test("Search by name (Technology)", False, "No colleges with 'Technology' found")
+            else:
+                self.log_test("Search by name (Technology)", False, f"Status code: {response.status_code}")
         except Exception as e:
-            self.log_test("Search by name (IIT)", False, f"Exception: {str(e)}")
+            self.log_test("Search by name", False, f"Exception: {str(e)}")
 
     def test_search_by_location(self):
         """Test searching colleges by location"""
