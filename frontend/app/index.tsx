@@ -9,15 +9,28 @@ export default function Index() {
 
   useEffect(() => {
     if (!isLoading) {
+      console.log('Index: Navigation logic - isFirstTime:', isFirstTime, 'user:', !!user);
+      
       if (isFirstTime) {
+        console.log('Index: Navigating to onboarding');
         router.replace('/onboarding');
       } else if (user) {
-        router.replace('/(tabs)');
+        console.log('Index: User exists, navigating to tabs');
+        router.replace('/(tabs)/home');
       } else {
+        console.log('Index: No user, navigating to onboarding');
         router.replace('/onboarding');
       }
     }
   }, [isLoading, user, isFirstTime]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
