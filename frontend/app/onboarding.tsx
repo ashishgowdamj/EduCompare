@@ -82,7 +82,7 @@ export default function Onboarding() {
         await register(formData.name, formData.email, formData.password);
       }
       await setFirstTimeComplete();
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/home');
     } catch (error) {
       Alert.alert('Error', 'Authentication failed. Please try again.');
     } finally {
