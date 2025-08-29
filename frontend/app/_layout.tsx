@@ -13,9 +13,10 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="college/[id]" />
-            <Stack.Screen name="compare" />
-            <Stack.Screen name="search-results" />
+            <Stack.Screen 
+              name="college/[id]" 
+              options={{ presentation: 'card' }}
+            />
           </Stack>
         </CompareProvider>
       </FavoritesProvider>
