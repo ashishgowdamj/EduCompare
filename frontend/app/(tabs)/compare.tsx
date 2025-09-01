@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   TouchableOpacity,
@@ -12,10 +11,25 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useCompare } from '../../contexts/CompareContext';
 import { useRouter } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const COLUMN_WIDTH = 180;
 
 export default function Compare() {
   const { compareList, removeFromCompare, clearCompare } = useCompare();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  type CompareCollege = (typeof compareList)[number] & {
+    highest_package?: number;
+    established_year?: number;
+    total_students?: number;
+    hostel_facilities?: boolean;
+    wifi?: boolean;
+    sports_facilities?: boolean;
+    library_facilities?: boolean;
+  };
+  const list = compareList as CompareCollege[];
 
   const formatFees = (fees: number) => {
     if (fees >= 100000) {
@@ -52,10 +66,11 @@ export default function Compare() {
     return <View style={styles.starsContainer}>{stars}</View>;
   };
 
-  const ComparisonRow = ({ label, values, isHighlight = false }: {
+  const ComparisonRow = ({ label, values, isHighlight = false, renderValue }: {
     label: string;
     values: (string | number)[];
     isHighlight?: boolean;
+    renderValue?: (value: string | number, index: number) => React.ReactNode;
   }) => (
     <View style={[styles.comparisonRow, isHighlight && styles.highlightRow]}>
       <View style={styles.labelColumn}>
@@ -65,17 +80,35 @@ export default function Compare() {
       </View>
       {values.map((value, index) => (
         <View key={index} style={styles.valueColumn}>
-          <Text style={[styles.comparisonValue, isHighlight && styles.highlightText]}>
-            {value}
-          </Text>
+          {renderValue
+            ? renderValue(value, index)
+            : (
+              <Text style={[styles.comparisonValue, isHighlight && styles.highlightText]}>
+                {value}
+              </Text>
+            )}
         </View>
       ))}
     </View>
   );
 
-  if (compareList.length === 0) {
+  const BoolChip = ({ value }: { value: boolean }) => (
+    <View style={[styles.boolChip, value ? styles.yesChip : styles.noChip]}>
+      <Ionicons
+        name={value ? 'checkmark-circle' : 'close-circle'}
+        size={14}
+        color={value ? '#0f5132' : '#842029'}
+        style={{ marginRight: 6 }}
+      />
+      <Text style={[styles.boolChipText, value ? styles.yesText : styles.noText]}>
+        {value ? 'Yes' : 'No'}
+      </Text>
+    </View>
+  );
+
+  if (list.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         
         {/* Header */}
@@ -103,7 +136,7 @@ export default function Compare() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}
@@ -111,7 +144,7 @@ export default function Compare() {
         <View>
           <Text style={styles.headerTitle}>Compare Colleges</Text>
           <Text style={styles.headerSubtitle}>
-            {compareList.length} college{compareList.length !== 1 ? 's' : ''} selected
+            {list.length} college{list.length !== 1 ? 's' : ''} selected
           </Text>
         </View>
         <TouchableOpacity onPress={clearCompare} style={styles.clearButton}>
@@ -120,123 +153,134 @@ export default function Compare() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* College Headers */}
-        <View style={styles.collegeHeaders}>
-          <View style={styles.labelColumn} />
-          {compareList.map((college, index) => (
-            <View key={college.id} style={styles.collegeHeader}>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeFromCompare(college.id)}
-              >
-                <Ionicons name="close" size={16} color="#666" />
-              </TouchableOpacity>
-              
-              <View style={styles.collegeHeaderContent}>
-                {college.logo_base64 ? (
-                  <Image
-                    source={{ uri: `data:image/jpeg;base64,${college.logo_base64}` }}
-                    style={styles.collegeLogo}
-                  />
-                ) : (
-                  <View style={[styles.collegeLogo, styles.placeholderLogo]}>
-                    <Ionicons name="school" size={20} color="#2196F3" />
-                  </View>
-                )}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator
+          contentContainerStyle={styles.hScrollContent}
+        >
+          {/* College Headers */}
+          <View style={styles.collegeHeaders}>
+            <View style={styles.labelColumn} />
+            {list.map((college) => (
+              <View key={college.id} style={styles.collegeHeader}>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => removeFromCompare(college.id)}
+                >
+                  <Ionicons name="close" size={16} color="#666" />
+                </TouchableOpacity>
                 
-                <Text style={styles.collegeName} numberOfLines={3}>
-                  {college.name}
-                </Text>
-                
-                <Text style={styles.collegeLocation}>
-                  {college.city}, {college.state}
-                </Text>
-                
-                {renderStars(college.star_rating)}
+                <View style={styles.collegeHeaderContent}>
+                  {college.logo_base64 ? (
+                    <Image
+                      source={{ uri: `data:image/jpeg;base64,${college.logo_base64}` }}
+                      style={styles.collegeLogo}
+                    />
+                  ) : (
+                    <View style={[styles.collegeLogo, styles.placeholderLogo]}>
+                      <Ionicons name="school" size={20} color="#2196F3" />
+                    </View>
+                  )}
+                  
+                  <Text style={styles.collegeName} numberOfLines={3}>
+                    {college.name}
+                  </Text>
+                  
+                  <Text style={styles.collegeLocation}>
+                    {college.city}, {college.state}
+                  </Text>
+                  
+                  {renderStars(college.star_rating)}
+                </View>
               </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
 
-        {/* Comparison Table */}
-        <View style={styles.comparisonTable}>
-          <ComparisonRow
-            label="Ranking"
-            values={compareList.map(c => c.ranking ? `#${c.ranking}` : 'N/A')}
-            isHighlight
-          />
-          
-          <ComparisonRow
-            label="Annual Fees"
-            values={compareList.map(c => formatFees(c.annual_fees))}
-            isHighlight
-          />
-          
-          <ComparisonRow
-            label="Average Package"
-            values={compareList.map(c => formatPackage(c.average_package))}
-            isHighlight
-          />
-          
-          <ComparisonRow
-            label="Highest Package"
-            values={compareList.map(c => formatPackage(c.highest_package))}
-          />
-          
-          <ComparisonRow
-            label="Placement %"
-            values={compareList.map(c => `${c.placement_percentage}%`)}
-            isHighlight
-          />
-          
-          <ComparisonRow
-            label="University Type"
-            values={compareList.map(c => c.university_type)}
-          />
-          
-          <ComparisonRow
-            label="Established"
-            values={compareList.map(c => c.established_year?.toString() || 'N/A')}
-          />
-          
-          <ComparisonRow
-            label="Total Students"
-            values={compareList.map(c => c.total_students?.toLocaleString() || 'N/A')}
-          />
-          
-          <ComparisonRow
-            label="Hostel"
-            values={compareList.map(c => c.hostel_facilities ? '✓' : '✗')}
-          />
-          
-          <ComparisonRow
-            label="WiFi"
-            values={compareList.map(c => c.wifi ? '✓' : '✗')}
-          />
-          
-          <ComparisonRow
-            label="Sports"
-            values={compareList.map(c => c.sports_facilities ? '✓' : '✗')}
-          />
-          
-          <ComparisonRow
-            label="Library"
-            values={compareList.map(c => c.library_facilities ? '✓' : '✗')}
-          />
-        </View>
+          {/* Comparison Table */}
+          <View style={styles.comparisonTable}>
+            <ComparisonRow
+              label="Ranking"
+              values={list.map(c => c.ranking ? `#${c.ranking}` : 'N/A')}
+              isHighlight
+            />
+            
+            <ComparisonRow
+              label="Annual Fees"
+              values={list.map(c => formatFees(c.annual_fees))}
+              isHighlight
+            />
+            
+            <ComparisonRow
+              label="Average Package"
+              values={list.map(c => formatPackage(c.average_package))}
+              isHighlight
+            />
+            
+            <ComparisonRow
+              label="Highest Package"
+              values={list.map(c => formatPackage(c.highest_package || 0))}
+            />
+            
+            <ComparisonRow
+              label="Placement %"
+              values={list.map(c => `${c.placement_percentage}%`)}
+              isHighlight
+            />
+            
+            <ComparisonRow
+              label="University Type"
+              values={list.map(c => c.university_type)}
+            />
+            
+            <ComparisonRow
+              label="Established"
+              values={list.map(c => c.established_year?.toString() || 'N/A')}
+            />
+            
+            <ComparisonRow
+              label="Total Students"
+              values={list.map(c => c.total_students?.toLocaleString() || 'N/A')}
+            />
+            
+            <ComparisonRow
+              label="Hostel"
+              values={list.map(c => (c.hostel_facilities ? 'Yes' : 'No'))}
+              renderValue={(val) => <BoolChip value={val === 'Yes'} />}
+            />
+            
+            <ComparisonRow
+              label="WiFi"
+              values={list.map(c => (c.wifi ? 'Yes' : 'No'))}
+              renderValue={(val) => <BoolChip value={val === 'Yes'} />}
+            />
+            
+            <ComparisonRow
+              label="Sports"
+              values={list.map(c => (c.sports_facilities ? 'Yes' : 'No'))}
+              renderValue={(val) => <BoolChip value={val === 'Yes'} />}
+            />
+            
+            <ComparisonRow
+              label="Library"
+              values={list.map(c => (c.library_facilities ? 'Yes' : 'No'))}
+              renderValue={(val) => <BoolChip value={val === 'Yes'} />}
+            />
+          </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          {compareList.map((college, index) => (
-            <TouchableOpacity
-              key={college.id}
-              style={styles.viewDetailsButton}
-              onPress={() => router.push(`/college/${college.id}`)}
-            >
-              <Text style={styles.viewDetailsText}>View Details</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <View style={styles.labelColumn} />
+            {list.map((college) => (
+              <TouchableOpacity
+                key={college.id}
+                style={styles.viewDetailsButton}
+                onPress={() => router.push(`/college/${college.id}`)}
+              >
+                <Text style={styles.viewDetailsText}>View Details</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -246,6 +290,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  hScrollContent: {
+    paddingHorizontal: 12,
   },
   header: {
     flexDirection: 'row',
@@ -289,10 +336,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   labelColumn: {
-    width: 100,
+    width: 120,
   },
   collegeHeader: {
-    flex: 1,
+    width: COLUMN_WIDTH,
     paddingHorizontal: 8,
     position: 'relative',
   },
@@ -368,7 +415,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   valueColumn: {
-    flex: 1,
+    width: COLUMN_WIDTH,
     paddingHorizontal: 8,
   },
   comparisonValue: {
@@ -376,6 +423,25 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  boolChip: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  yesChip: {
+    backgroundColor: '#d1e7dd',
+  },
+  noChip: {
+    backgroundColor: '#f8d7da',
+  },
+  boolChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  yesText: { color: '#0f5132' },
+  noText: { color: '#842029' },
   actionButtons: {
     flexDirection: 'row',
     padding: 16,
@@ -384,7 +450,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
   },
   viewDetailsButton: {
-    flex: 1,
+    width: COLUMN_WIDTH,
     backgroundColor: '#2196F3',
     paddingVertical: 12,
     borderRadius: 6,

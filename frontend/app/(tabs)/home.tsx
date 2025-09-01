@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
   RefreshControl,
@@ -19,6 +18,7 @@ import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
 import CollegeCard from '../../components/CollegeCard';
 import FilterModal from '../../components/FilterModal';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const { width } = Dimensions.get('window');
@@ -71,6 +71,7 @@ interface Filters {
 }
 
 export default function Home() {
+  const insets = useSafeAreaInsets();
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -254,7 +255,7 @@ export default function Home() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }] }>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}

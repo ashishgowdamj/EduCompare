@@ -10,6 +10,8 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -224,6 +226,32 @@ export default function CollegeDetails() {
     </View>
   );
 
+  // Quick action handlers
+  const handleCall = () => {
+    if (!college?.contact_phone) return;
+    const telUrl = `tel:${college.contact_phone}`;
+    Linking.openURL(telUrl).catch(() => {});
+  };
+
+  const handleWebsite = () => {
+    if (!college?.website) return;
+    let url = college.website.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const handleMap = () => {
+    if (!college?.address) return;
+    const query = encodeURIComponent(college.address);
+    const ios = `maps://?q=${query}`;
+    const android = `geo:0,0?q=${query}`;
+    const web = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    const url = Platform.select({ ios, android, default: web }) as string;
+    Linking.openURL(url).catch(() => {});
+  };
+
   const renderFacilities = () => (
     <View style={styles.tabContent}>
       <View style={styles.facilitiesGrid}>
@@ -331,7 +359,37 @@ export default function CollegeDetails() {
           <Text style={styles.contactLabel}>Website</Text>
           <Text style={styles.contactValue}>{college?.website}</Text>
         </View>
-      </div>
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.quickActionsRow}>
+        <TouchableOpacity
+          style={[styles.quickActionBtn, !college?.contact_phone && styles.quickActionDisabled]}
+          onPress={handleCall}
+          disabled={!college?.contact_phone}
+        >
+          <Ionicons name="call" size={18} color="#fff" />
+          <Text style={styles.quickActionText}>Call</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionBtn, !college?.website && styles.quickActionDisabled]}
+          onPress={handleWebsite}
+          disabled={!college?.website}
+        >
+          <Ionicons name="globe" size={18} color="#fff" />
+          <Text style={styles.quickActionText}>Website</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionBtn, !college?.address && styles.quickActionDisabled]}
+          onPress={handleMap}
+          disabled={!college?.address}
+        >
+          <Ionicons name="map" size={18} color="#fff" />
+          <Text style={styles.quickActionText}>Map</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -885,5 +943,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginRight: 6,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  quickActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginHorizontal: 6,
+  },
+  quickActionDisabled: {
+    backgroundColor: '#B0BEC5',
+  },
+  quickActionText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });
