@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import * as Animatable from 'react-native-animatable';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -66,10 +67,27 @@ export default function CollegeDetails() {
 
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
+  const { addToBrowsingHistory } = usePreferences();
 
   useEffect(() => {
     if (id) {
       fetchCollegeDetails();
+      // Track browsing history
+      const startTime = Date.now();
+      addToBrowsingHistory({
+        collegeId: id,
+        action: 'view'
+      });
+      
+      // Track viewing duration on unmount
+      return () => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        addToBrowsingHistory({
+          collegeId: id,
+          action: 'view',
+          duration
+        });
+      };
     }
   }, [id]);
 

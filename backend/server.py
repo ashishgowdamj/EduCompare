@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime
 from bson import ObjectId
 import re
+from recommendation_engine import RecommendationEngine
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,6 +35,9 @@ app.add_middleware(
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+# Initialize recommendation engine
+recommendation_engine = RecommendationEngine()
 
 # Define Models
 class College(BaseModel):
@@ -165,6 +169,30 @@ class Compare(BaseModel):
 class CompareCreate(BaseModel):
     user_id: str
     college_ids: List[str]
+
+class UserPreferences(BaseModel):
+    academicPercentage: Optional[float] = None
+    preferredCourses: List[str] = []
+    budgetRange: Dict[str, int] = {"min": 0, "max": 1000000}
+    preferredStates: List[str] = []
+    preferredCities: List[str] = []
+    universityTypes: List[str] = []
+    minRating: Optional[float] = None
+    placementPriority: int = 3
+    feesPriority: int = 3
+    rankingPriority: int = 3
+    entranceExams: List[str] = []
+
+class BrowsingHistoryItem(BaseModel):
+    collegeId: str
+    action: str  # 'view', 'favorite', 'compare', 'search'
+    duration: Optional[int] = None
+
+class RecommendationRequest(BaseModel):
+    user_id: str
+    preferences: UserPreferences
+    browsing_history: List[BrowsingHistoryItem] = []
+    limit: int = 10
 
 # Helper function to convert ObjectId to string
 def college_helper(college) -> dict:
@@ -404,6 +432,115 @@ async def compare_colleges(college_ids: List[str]):
             continue
     
     return {"colleges": colleges}
+
+# Recommendation Routes
+@api_router.post("/recommendations")
+async def get_recommendations(request: RecommendationRequest):
+    """Get personalized college recommendations based on user preferences and browsing history"""
+    try:
+        # Get all colleges from database
+        colleges_cursor = db.colleges.find({})
+        colleges = await colleges_cursor.to_list(length=None)
+        
+        if not colleges:
+            return {"recommendations": [], "message": "No colleges found in database"}
+        
+        # Convert to dict format for recommendation engine
+        colleges_dict = [college_helper(college) for college in colleges]
+        
+        # Convert preferences to dict
+        preferences_dict = request.preferences.dict()
+        
+        # Convert browsing history to dict
+        browsing_history_dict = [item.dict() for item in request.browsing_history]
+        
+        # Get recommendations
+        recommendations = recommendation_engine.calculate_recommendations(
+            colleges_dict, 
+            preferences_dict, 
+            browsing_history_dict
+        )
+        
+        # Limit results
+        limited_recommendations = recommendations[:request.limit]
+        
+        return {
+            "recommendations": limited_recommendations,
+            "total_found": len(recommendations),
+            "user_id": request.user_id
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+
+@api_router.get("/recommendations/trending")
+async def get_trending_colleges(limit: int = Query(10, ge=1, le=50)):
+    """Get trending colleges based on overall popularity and ratings"""
+    try:
+        # Get all colleges from database
+        colleges_cursor = db.colleges.find({})
+        colleges = await colleges_cursor.to_list(length=None)
+        
+        if not colleges:
+            return {"trending": [], "message": "No colleges found in database"}
+        
+        # Convert to dict format
+        colleges_dict = [college_helper(college) for college in colleges]
+        
+        # Get trending colleges (fallback to top-rated if no browsing history)
+        trending = recommendation_engine.get_trending_colleges(colleges_dict, [])
+        
+        return {
+            "trending": trending[:limit],
+            "total_found": len(trending)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting trending colleges: {str(e)}")
+
+@api_router.post("/recommendations/quick")
+async def get_quick_recommendations(
+    preferred_courses: List[str] = Query(..., description="Preferred courses"),
+    budget_max: int = Query(500000, description="Maximum budget"),
+    preferred_state: Optional[str] = Query(None, description="Preferred state"),
+    limit: int = Query(5, ge=1, le=20)
+):
+    """Get quick recommendations based on basic preferences"""
+    try:
+        # Build basic filter query
+        filter_query = {}
+        
+        # Course filter
+        if preferred_courses:
+            filter_query["courses_offered"] = {
+                "$in": [re.compile(course, re.IGNORECASE) for course in preferred_courses]
+            }
+        
+        # Budget filter
+        filter_query["annual_fees"] = {"$lte": budget_max}
+        
+        # State filter
+        if preferred_state:
+            filter_query["state"] = {"$regex": preferred_state, "$options": "i"}
+        
+        # Get colleges matching basic criteria
+        colleges_cursor = db.colleges.find(filter_query).sort("star_rating", -1).limit(limit)
+        colleges = await colleges_cursor.to_list(length=None)
+        
+        # Convert to response format
+        college_responses = [CollegeResponse(**college_helper(college)) for college in colleges]
+        
+        return {
+            "quick_recommendations": college_responses,
+            "criteria": {
+                "courses": preferred_courses,
+                "max_budget": budget_max,
+                "state": preferred_state
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting quick recommendations: {str(e)}")
 
 # Initialize dummy data
 @api_router.post("/init-data")
