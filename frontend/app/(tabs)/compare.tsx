@@ -108,13 +108,15 @@ export default function Compare() {
 
   if (list.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Compare Colleges</Text>
-          <Text style={styles.headerSubtitle}>Add colleges to compare side by side</Text>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Compare Colleges</Text>
+            <Text style={styles.headerSubtitle}>Add colleges to compare side by side</Text>
+          </View>
         </View>
 
         <View style={styles.emptyContainer}>
@@ -136,12 +138,12 @@ export default function Compare() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Compare Colleges</Text>
           <Text style={styles.headerSubtitle}>
             {list.length} college{list.length !== 1 ? 's' : ''} selected
@@ -290,6 +292,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: 0,
   },
   hScrollContent: {
     paddingHorizontal: 12,
@@ -303,6 +306,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  headerContent: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 24,
