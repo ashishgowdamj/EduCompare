@@ -2,6 +2,9 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCompare } from '../../contexts/CompareContext';
+import { Platform, StyleSheet } from 'react-native';
+
+const isIOS = Platform.OS === 'ios';
 
 export default function TabLayout() {
   const { compareList } = useCompare();
@@ -12,18 +15,13 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: '#2196F3',
         tabBarInactiveTintColor: '#999',
-        tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
-          paddingBottom: 4,
-          paddingTop: 4,
-          height: 60,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
+        tabBarStyle: [
+          styles.tabBar,
+          isIOS && styles.iosTabBar,
+        ],
+        tabBarItemStyle: styles.tabBarItem,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarIconStyle: styles.tabBarIcon,
       }}
     >
       <Tabs.Screen
@@ -66,3 +64,32 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    height: Platform.select({ ios: 85, android: 60 }),
+    paddingBottom: Platform.select({ ios: 20, android: 4 }),
+    paddingTop: 8,
+  },
+  iosTabBar: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderTopWidth: 0,
+  },
+  tabBarItem: {
+    paddingVertical: 4,
+  },
+  tabBarLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  tabBarIcon: {
+    marginTop: 4,
+  },
+});

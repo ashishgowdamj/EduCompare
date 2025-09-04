@@ -1,0 +1,6 @@
+env: load .env
+env: export EXPO_PUBLIC_BACKEND_URL
+Starting project at /Users/learn/app/frontend
+› Port 8081 is running this app in another window
+  /Users/learn/app/frontend (pid 13784)
+› Skipping dev server

@@ -92,7 +92,7 @@ export default function Onboarding() {
 
   const handleGuestAccess = async () => {
     await setFirstTimeComplete();
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/home');
   };
 
   if (showAuth) {

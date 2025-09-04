@@ -3,22 +3,25 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   StatusBar,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
+import { FlashList } from '@shopify/flash-list';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
-import CollegeCard from '../../components/CollegeCard';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import HomeHero from '../../components/HomeHero';
+import CategoriesSection from '../../components/CategoriesSection';
+import FeaturedColleges from '../../components/FeaturedColleges';
+import QuickActions from '../../components/QuickActions';
 import FilterModal from '../../components/FilterModal';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const { width } = Dimensions.get('window');
@@ -71,7 +74,6 @@ interface Filters {
 }
 
 export default function Home() {
-  const insets = useSafeAreaInsets();
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,6 +83,7 @@ export default function Home() {
   const [filters, setFilters] = useState<Filters>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [popularSearches] = useState([
     'IIT', 'NIT', 'IIIT', 'Engineering', 'Medical', 'MBA', 'Delhi', 'Mumbai', 'Bangalore'
   ]);
@@ -95,14 +98,9 @@ export default function Home() {
 
   const initializeData = async () => {
     try {
-      // Initialize dummy data first
-      await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/init-data`, {
-        method: 'POST',
-      });
-      
       await searchColleges(true);
     } catch (error) {
-      console.error('Error initializing data:', error);
+      console.error('Error fetching colleges:', error);
     } finally {
       setLoading(false);
     }
@@ -137,12 +135,26 @@ export default function Home() {
       queryParams.append('page', (reset ? 1 : page).toString());
       queryParams.append('limit', '10');
 
-      const response = await fetch(
-        `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?${queryParams.toString()}`
-      );
+      const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?${queryParams.toString()}`;
+      console.log('Fetching from URL:', url);
+      
+      // Test the URL first
+      try {
+        const testResponse = await fetch('http://localhost:8000/api/colleges/search?page=1');
+        console.log('Test response status:', testResponse.status);
+        const testData = await testResponse.json();
+        console.log('Test response data:', testData);
+      } catch (testError) {
+        console.error('Test fetch error:', testError);
+      }
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch colleges');
+        const errorText = await response.text();
+        console.error('Failed to fetch colleges:', errorText);
+        throw new Error(`Failed to fetch colleges: ${response.status} ${response.statusText}`);
       }
       
       const data: CollegeSearchResponse = await response.json();
@@ -193,7 +205,55 @@ export default function Home() {
   };
 
   const handleCollegePress = (college: College) => {
-    router.push(`/college/${college.id}`);
+    // Navigate to college detail page
+    router.push(`/college/${college.id}` as any);
+  };
+
+  const handleSearch = () => {
+    // Reset to first page when searching
+    setPage(1);
+    searchColleges(true);
+  };
+
+  const handleQuickAction = (action: string) => {
+    // Using valid routes from the app structure
+    switch (action) {
+      case 'compare':
+        router.push('/(tabs)/compare' as any);
+        break;
+      case 'saved':
+        // Navigate to favorites tab
+        router.push('/(tabs)/favorites' as any);
+        break;
+      case 'exams':
+        // Navigate to home with exam filter
+        setSearchQuery('exams');
+        handleSearch();
+        break;
+      case 'scholarships':
+        // Navigate to home with scholarship filter
+        setSearchQuery('scholarships');
+        handleSearch();
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleCategorySelect = (category: string) => {
+    const newSelectedCategory = category === selectedCategory ? '' : category;
+    setSelectedCategory(newSelectedCategory);
+    
+    // Apply category filter
+    const newFilters = { ...filters };
+    if (newSelectedCategory && newSelectedCategory !== 'All') {
+      newFilters.universityType = newSelectedCategory;
+    } else {
+      delete newFilters.universityType;
+    }
+    setFilters(newFilters);
+    setPage(1);
+    searchColleges(true);
   };
 
   const applyFilters = (newFilters: Filters) => {
@@ -221,14 +281,14 @@ export default function Home() {
   };
 
   const renderCollegeItem = ({ item }: { item: College }) => (
-    <CollegeCard
-      college={item}
+    <TouchableOpacity 
+      style={styles.collegeCard}
       onPress={() => handleCollegePress(item)}
-      onFavoritePress={() => handleFavoriteToggle(item)}
-      onComparePress={() => handleCompareToggle(item)}
-      isFavorite={isFavorite(item.id)}
-      isInCompare={isInCompare(item.id)}
-    />
+    >
+      <Text style={styles.collegeName}>{item.name}</Text>
+      <Text style={styles.collegeLocation}>{item.city}, {item.state}</Text>
+      <Text style={styles.collegeRating}>Rating: {item.star_rating.toFixed(1)} ★</Text>
+    </TouchableOpacity>
   );
 
   const renderFooter = () => {
@@ -255,108 +315,91 @@ export default function Home() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }] }>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#2196F3" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Find Your College</Text>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#2196F3']}
+            tintColor="#2196F3"
+          />
+        }
+      >
+        {/* Hero Section with Search */}
+        <HomeHero 
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={handleSearch}
+        />
+
+        {/* Quick Actions */}
+        <QuickActions onActionPress={handleQuickAction} />
+
+        {/* Categories */}
+        <CategoriesSection 
+          onSelectCategory={handleCategorySelect}
+          selectedCategory={selectedCategory}
+        />
+
+        {/* Featured Colleges */}
+        {colleges.length > 0 && (
+          <FeaturedColleges 
+            colleges={colleges}
+            onViewAll={() => {}}
+          />
+        )}
+
+        {/* All Colleges */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>All Colleges</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2196F3" />
+              <Text style={styles.loadingText}>Loading colleges...</Text>
+            </View>
+          ) : (
+            <FlashList
+              data={colleges}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.collegeCard}>
+                  <Text style={styles.collegeName}>{item.name}</Text>
+                  <Text style={styles.collegeLocation}>{item.city}, {item.state}</Text>
+                  <Text style={styles.collegeRating}>Rating: {item.star_rating.toFixed(1)} ★</Text>
+                </View>
+              )}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              estimatedItemSize={150}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="search" size={48} color="#ccc" />
+                  <Text style={styles.emptyText}>No colleges found</Text>
+                  <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Filter Button */}
+      <View style={styles.fabContainer}>
         <TouchableOpacity 
-          style={styles.filterButton}
+          style={styles.fab}
           onPress={() => setShowFilters(true)}
         >
-          <Ionicons 
-            name="options" 
-            size={24} 
-            color={Object.keys(filters).length > 0 ? "#2196F3" : "#666"} 
-          />
-          {Object.keys(filters).length > 0 && <View style={styles.filterBadge} />}
+          <Ionicons name="options" size={24} color="#fff" />
+          {Object.keys(filters).length > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{Object.keys(filters).length}</Text>
+            </View>
+          )}
         </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search colleges, courses, cities..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={() => searchColleges(true)}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => {
-              setSearchQuery('');
-              searchColleges(true);
-            }}
-          >
-            <Ionicons name="close-circle" size={20} color="#666" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Popular Searches */}
-      {searchQuery.length === 0 && (
-        <View style={styles.popularContainer}>
-          <Text style={styles.popularTitle}>Popular Searches</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularScroll}>
-            <View style={styles.popularTags}>
-              {popularSearches.map((term, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.popularTag}
-                  onPress={() => handlePopularSearch(term)}
-                >
-                  <Text style={styles.popularTagText}>{term}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Results Header */}
-      <View style={styles.resultsHeader}>
-        <Text style={styles.resultsText}>
-          {colleges.length} college{colleges.length !== 1 ? 's' : ''} found
-        </Text>
-        {searchLoading && colleges.length === 0 && (
-          <ActivityIndicator size="small" color="#2196F3" />
-        )}
-      </View>
-
-      {/* College List */}
-      <View style={styles.listContainer}>
-        <FlashList
-          data={colleges}
-          renderItem={renderCollegeItem}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={renderFooter}
-          estimatedItemSize={200}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="school-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No colleges found</Text>
-              <Text style={styles.emptySubtext}>
-                Try adjusting your search criteria or filters
-              </Text>
-              {Object.keys(filters).length > 0 && (
-                <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
-                  <Text style={styles.clearFiltersText}>Clear Filters</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          }
-        />
       </View>
 
       {/* Filter Modal */}
@@ -367,68 +410,96 @@ export default function Home() {
         onApply={applyFilters}
         onClear={clearFilters}
       />
-    </SafeAreaView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  section: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: 32,
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
   },
   loadingText: {
     fontSize: 16,
     color: '#666',
     marginTop: 16,
-    textAlign: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  collegeCard: {
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  filterButton: {
-    position: 'relative',
-    padding: 8,
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    backgroundColor: '#FF5722',
-    borderRadius: 4,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginVertical: 16,
     borderRadius: 12,
-    paddingHorizontal: 16,
+    padding: 16,
+    marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  collegeName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  collegeLocation: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  collegeRating: {
+    fontSize: 14,
+    color: '#2196F3',
+    fontWeight: '500',
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    zIndex: 10,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2196F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF5722',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   searchIcon: {
     marginRight: 12,
