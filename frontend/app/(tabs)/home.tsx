@@ -20,6 +20,11 @@ import CategoriesSection from '../../components/CategoriesSection';
 import FilterModal from '../../components/FilterModal';
 import CollegeCard from '../../components/CollegeCard';
 import RecommendationsSection from '../../components/RecommendationsSection';
+import DeadlineTracker from '../../components/DeadlineTracker';
+import UpdatesFeed from '../../components/UpdatesFeed';
+import ApplicationProgress from '../../components/ApplicationProgress';
+import SmartQuickActions from '../../components/SmartQuickActions';
+import DashboardAnalytics from '../../components/DashboardAnalytics';
 
 // Types
 interface College {
@@ -372,6 +377,17 @@ const HomeScreen = () => {
       </View>
 
       <View style={styles.content}>
+        {/* Personalized Dashboard Components */}
+        <DashboardAnalytics />
+        
+        <SmartQuickActions />
+        
+        <DeadlineTracker />
+        
+        <ApplicationProgress />
+        
+        <UpdatesFeed />
+
         <CategoriesSection
           selectedCategory={selectedCategory}
           onSelectCategory={handleCategorySelect}
