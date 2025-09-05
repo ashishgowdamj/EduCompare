@@ -115,7 +115,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
               {college.name}
             </Text>
             <Text style={styles.location}>
-              📍 {college.city}, {college.state}
+              {college.city}, {college.state}
             </Text>
             
             <View style={styles.ratingRow}>

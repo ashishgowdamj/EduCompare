@@ -510,7 +510,7 @@ export default function CollegeDetails() {
             <View style={styles.collegeInfo}>
               <Text style={styles.collegeName}>{college.name}</Text>
               <Text style={styles.collegeLocation}>
-                📍 {college.city}, {college.state}
+                {college.city}, {college.state}
               </Text>
               <View style={styles.ratingRow}>
                 {renderStars(college.star_rating)}

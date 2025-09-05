@@ -202,7 +202,7 @@ const ApplicationProgress: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Ionicons name="clipboard" size={20} color="#2196F3" />
-          <Text style={styles.title}>📋 Application Progress</Text>
+          <Text style={styles.title}>Application Progress</Text>
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="clipboard-outline" size={48} color="#ccc" />
@@ -217,7 +217,7 @@ const ApplicationProgress: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="clipboard" size={20} color="#2196F3" />
-        <Text style={styles.title}>📋 Application Progress</Text>
+        <Text style={styles.title}>Application Progress</Text>
         <TouchableOpacity style={styles.viewAllButton}>
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>

@@ -7,9 +7,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { usePreferences } from '../contexts/PreferencesContext';
 import { useFavorites } from '../contexts/FavoritesContext';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 interface QuickAction {
   id: string;
@@ -23,42 +22,35 @@ interface QuickAction {
 
 const SmartQuickActions: React.FC = () => {
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
-  const { preferences } = usePreferences();
   const { favorites } = useFavorites();
-  const router = useRouter();
 
   useEffect(() => {
     generateSmartActions();
-  }, [preferences, favorites]);
+  }, [favorites]);
 
   const generateSmartActions = () => {
     const actions: QuickAction[] = [];
 
-    // If no preferences set, prioritize setup
-    if (!preferences?.academicProfile?.field) {
-      actions.push({
-        id: 'setup-preferences',
-        title: 'Set Up Preferences',
-        description: 'Tell us about your goals',
-        icon: 'settings',
-        color: '#2196F3',
-        action: () => router.push('/preferences-setup'),
-        priority: 10,
-      });
-    }
+    // Default actions for all users
+    actions.push({
+      id: 'setup-preferences',
+      title: 'Set Up Preferences',
+      description: 'Tell us about your goals',
+      icon: 'material-symbols:settings',
+      color: '#2196F3',
+      action: () => router.push('/(tabs)/home'),
+      priority: 1,
+    });
 
-    // If preferences set but no favorites, suggest exploring
-    if (preferences?.academicProfile?.field && favorites.length === 0) {
-      actions.push({
-        id: 'explore-colleges',
-        title: 'Explore Colleges',
-        description: 'Find colleges that match you',
-        icon: 'search',
-        color: '#4CAF50',
-        action: () => router.push('/(tabs)/home'),
-        priority: 9,
-      });
-    }
+    actions.push({
+      id: 'choose-field',
+      title: 'Choose Your Field',
+      description: 'Select your area of study',
+      icon: 'material-symbols:school',
+      color: '#4CAF50',
+      action: () => router.push('/(tabs)/home'),
+      priority: 2,
+    });
 
     // If has favorites but less than 3, suggest adding more
     if (favorites.length > 0 && favorites.length < 3) {
@@ -66,7 +58,7 @@ const SmartQuickActions: React.FC = () => {
         id: 'add-more-favorites',
         title: 'Add More Colleges',
         description: 'Build your shortlist',
-        icon: 'heart-outline',
+        icon: 'material-symbols:favorite-outline',
         color: '#FF5722',
         action: () => router.push('/(tabs)/home'),
         priority: 8,
@@ -79,44 +71,34 @@ const SmartQuickActions: React.FC = () => {
         id: 'compare-colleges',
         title: 'Compare Colleges',
         description: 'See side-by-side comparison',
-        icon: 'analytics',
+        icon: 'material-symbols:analytics',
         color: '#9C27B0',
         action: () => router.push('/(tabs)/compare'),
         priority: 7,
       });
     }
 
-    // Entrance exam preparation
-    if (preferences?.entranceExams?.length) {
-      actions.push({
-        id: 'exam-prep',
-        title: 'Exam Preparation',
-        description: `Prepare for ${preferences.entranceExams[0]}`,
-        icon: 'school',
-        color: '#FF9800',
-        action: () => {
-          // Could navigate to exam prep section
-          console.log('Navigate to exam prep');
-        },
-        priority: 6,
-      });
-    }
+    // Always show exam preparation
+    actions.push({
+      id: 'exam-prep',
+      title: 'Exam Preparation',
+      description: 'Prepare for entrance exams',
+      icon: 'material-symbols:menu-book',
+      color: '#607D8B',
+      action: () => router.push('/(tabs)/home'),
+      priority: 6,
+    });
 
-    // Scholarship search
-    if (preferences?.budget?.maxBudget && preferences.budget.maxBudget < 500000) {
-      actions.push({
-        id: 'find-scholarships',
-        title: 'Find Scholarships',
-        description: 'Discover funding opportunities',
-        icon: 'trophy',
-        color: '#FFC107',
-        action: () => {
-          // Could navigate to scholarship section
-          console.log('Navigate to scholarships');
-        },
-        priority: 5,
-      });
-    }
+    // Always show scholarships
+    actions.push({
+      id: 'scholarships',
+      title: 'Find Scholarships',
+      description: 'Discover funding opportunities',
+      icon: 'material-symbols:emoji-events',
+      color: '#FF9800',
+      action: () => router.push('/(tabs)/home'),
+      priority: 5,
+    });
 
     // Application deadlines
     if (favorites.length > 0) {
@@ -124,7 +106,7 @@ const SmartQuickActions: React.FC = () => {
         id: 'check-deadlines',
         title: 'Check Deadlines',
         description: 'View upcoming dates',
-        icon: 'calendar',
+        icon: 'material-symbols:calendar-month',
         color: '#E91E63',
         action: () => {
           // Could navigate to deadlines section
@@ -139,7 +121,7 @@ const SmartQuickActions: React.FC = () => {
       id: 'virtual-tours',
       title: 'Virtual Tours',
       description: 'Explore campus online',
-      icon: 'videocam',
+      icon: 'material-symbols:videocam',
       color: '#00BCD4',
       action: () => {
         // Could navigate to virtual tours
@@ -149,36 +131,32 @@ const SmartQuickActions: React.FC = () => {
     });
 
     // Career guidance
-    if (preferences?.academicProfile?.field) {
-      actions.push({
-        id: 'career-guidance',
-        title: 'Career Guidance',
-        description: `Explore ${preferences.academicProfile.field} careers`,
-        icon: 'briefcase',
-        color: '#607D8B',
-        action: () => {
-          // Could navigate to career section
-          console.log('Navigate to career guidance');
-        },
-        priority: 2,
-      });
-    }
+    actions.push({
+      id: 'career-guidance',
+      title: 'Career Guidance',
+      description: 'Explore career options',
+      icon: 'material-symbols:work',
+      color: '#607D8B',
+      action: () => {
+        // Could navigate to career section
+        console.log('Navigate to career guidance');
+      },
+      priority: 2,
+    });
 
     // Study abroad options
-    if (preferences?.location?.preferredStates?.includes('International')) {
-      actions.push({
-        id: 'study-abroad',
-        title: 'Study Abroad',
-        description: 'International opportunities',
-        icon: 'airplane',
-        color: '#795548',
-        action: () => {
-          // Could navigate to study abroad section
-          console.log('Navigate to study abroad');
-        },
-        priority: 1,
-      });
-    }
+    actions.push({
+      id: 'study-abroad',
+      title: 'Study Abroad',
+      description: 'International opportunities',
+      icon: 'material-symbols:flight',
+      color: '#795548',
+      action: () => {
+        // Could navigate to study abroad section
+        console.log('Navigate to study abroad');
+      },
+      priority: 1,
+    });
 
     // Sort by priority and take top 6
     const sortedActions = actions
@@ -196,7 +174,7 @@ const SmartQuickActions: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="flash" size={20} color="#2196F3" />
-        <Text style={styles.title}>🎯 Smart Actions</Text>
+        <Text style={styles.title}>Smart Actions</Text>
         <Text style={styles.subtitle}>Personalized for you</Text>
       </View>
 
@@ -213,7 +191,7 @@ const SmartQuickActions: React.FC = () => {
           >
             <View style={[styles.iconContainer, { backgroundColor: action.color + '20' }]}>
               <Ionicons 
-                name={action.icon as any} 
+                name="settings" 
                 size={24} 
                 color={action.color} 
               />

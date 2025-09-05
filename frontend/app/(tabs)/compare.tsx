@@ -132,7 +132,7 @@ export default function Compare() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* College Cards Section */}
         <View style={styles.collegeCardsSection}>
-          <Text style={styles.sectionTitle}>🎓 Colleges Being Compared</Text>
+          <Text style={styles.sectionTitle}>Colleges Being Compared</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.collegeCardsContainer}>
             {list.map((college) => (
               <View key={college.id} style={styles.collegeCard}>
@@ -181,7 +181,7 @@ export default function Compare() {
         <View style={styles.comparisonContainer}>
           {/* Key Metrics Section */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>📊 Key Metrics</Text>
+            <Text style={styles.sectionTitle}>Key Metrics</Text>
             <View style={styles.sectionContent}>
               {list.map((college, index) => (
                 <View key={college.id} style={styles.detailRow}>
@@ -211,7 +211,7 @@ export default function Compare() {
 
           {/* College Info Section */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>🏛️ College Information</Text>
+            <Text style={styles.sectionTitle}>College Information</Text>
             <View style={styles.sectionContent}>
               {list.map((college) => (
                 <View key={college.id} style={styles.detailRow}>
@@ -237,7 +237,7 @@ export default function Compare() {
 
           {/* Facilities Section */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>🏢 Facilities</Text>
+            <Text style={styles.sectionTitle}>Facilities</Text>
             <View style={styles.sectionContent}>
               {list.map((college) => (
                 <View key={college.id} style={styles.detailRow}>

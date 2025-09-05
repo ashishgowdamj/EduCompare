@@ -4,11 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
-import { usePreferences } from '../contexts/PreferencesContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AnalyticsData {
@@ -31,7 +30,6 @@ const DashboardAnalytics: React.FC = () => {
   });
 
   const { favorites } = useFavorites();
-  const { preferences } = usePreferences();
 
   useEffect(() => {
     loadAnalytics();
@@ -109,8 +107,8 @@ const DashboardAnalytics: React.FC = () => {
     if (streak === 0) return 'Start exploring!';
     if (streak === 1) return 'Great start!';
     if (streak < 7) return `${streak} days strong!`;
-    if (streak < 30) return `${streak} days streak! 🔥`;
-    return `${streak} days! Amazing! 🚀`;
+    if (streak < 30) return `${streak} days streak!`;
+    return `${streak} days! Amazing!`;
   };
 
   const getProgressColor = (value: number, max: number): string => {
@@ -125,7 +123,7 @@ const DashboardAnalytics: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="analytics" size={20} color="#2196F3" />
-        <Text style={styles.title}>📊 Your Progress</Text>
+        <Text style={styles.title}>Your Progress</Text>
         <TouchableOpacity style={styles.detailsButton}>
           <Text style={styles.detailsText}>Details</Text>
         </TouchableOpacity>
@@ -238,21 +236,21 @@ const DashboardAnalytics: React.FC = () => {
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Profile</Text>
           <Text style={styles.statValue}>
-            {preferences?.academicProfile?.field ? '✅' : '⏳'}
+            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
           </Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Preferences</Text>
           <Text style={styles.statValue}>
-            {preferences?.location?.preferredStates?.length ? '✅' : '⏳'}
+            <Ionicons name="time" size={16} color="#FF9800" />
           </Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Budget Set</Text>
           <Text style={styles.statValue}>
-            {preferences?.budget?.maxBudget ? '✅' : '⏳'}
+            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
           </Text>
         </View>
       </View>

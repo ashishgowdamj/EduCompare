@@ -30,11 +30,11 @@ const UpdatesFeed: React.FC = () => {
 
   const getUpdateIcon = (type: string) => {
     switch (type) {
-      case 'news': return 'newspaper';
-      case 'deadline': return 'time';
-      case 'admission': return 'school';
-      case 'scholarship': return 'trophy';
-      default: return 'information-circle';
+      case 'news': return 'material-symbols:newspaper';
+      case 'deadline': return 'material-symbols:schedule';
+      case 'admission': return 'material-symbols:school';
+      case 'scholarship': return 'material-symbols:emoji-events';
+      default: return 'material-symbols:info';
     }
   };
 
@@ -54,7 +54,7 @@ const UpdatesFeed: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Ionicons name="notifications" size={20} color="#2196F3" />
-          <Text style={styles.title}>🔔 Updates & News</Text>
+          <Text style={styles.title}>Updates & News</Text>
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="notifications-outline" size={48} color="#ccc" />
@@ -69,7 +69,7 @@ const UpdatesFeed: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="notifications" size={20} color="#2196F3" />
-        <Text style={styles.title}>🔔 Updates & News</Text>
+        <Text style={styles.title}>Updates & News</Text>
         {unreadUpdates.length > 0 && (
           <View style={styles.unreadBadge}>
             <Text style={styles.unreadCount}>{unreadUpdates.length}</Text>
@@ -89,7 +89,7 @@ const UpdatesFeed: React.FC = () => {
             <View style={styles.updateHeader}>
               <View style={styles.updateIconContainer}>
                 <Ionicons 
-                  name={getUpdateIcon(update.type) as any} 
+                  name="information-circle" 
                   size={16} 
                   color={getPriorityColor(update.priority)} 
                 />

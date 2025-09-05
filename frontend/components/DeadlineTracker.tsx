@@ -145,11 +145,11 @@ const DeadlineTracker: React.FC = () => {
 
   const getDeadlineIcon = (type: Deadline['type']): string => {
     switch (type) {
-      case 'application': return 'document-text';
-      case 'entrance_exam': return 'school';
-      case 'scholarship': return 'trophy';
-      case 'document_submission': return 'folder';
-      default: return 'calendar';
+      case 'application': return 'material-symbols:description';
+      case 'entrance_exam': return 'material-symbols:school';
+      case 'scholarship': return 'material-symbols:emoji-events';
+      case 'document_submission': return 'material-symbols:folder';
+      default: return 'material-symbols:calendar-month';
     }
   };
 
@@ -177,7 +177,7 @@ const DeadlineTracker: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Ionicons name="calendar" size={20} color="#2196F3" />
-          <Text style={styles.title}>📅 Upcoming Deadlines</Text>
+          <Text style={styles.title}>Upcoming Deadlines</Text>
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={48} color="#ccc" />
@@ -192,7 +192,7 @@ const DeadlineTracker: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="calendar" size={20} color="#2196F3" />
-        <Text style={styles.title}>📅 Upcoming Deadlines</Text>
+        <Text style={styles.title}>Upcoming Deadlines</Text>
         <TouchableOpacity style={styles.viewAllButton}>
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>
@@ -207,7 +207,7 @@ const DeadlineTracker: React.FC = () => {
               <View style={styles.deadlineHeader}>
                 <View style={styles.deadlineIconContainer}>
                   <Ionicons 
-                    name={getDeadlineIcon(deadline.type) as any} 
+                    name="time" 
                     size={18} 
                     color={getPriorityColor(deadline.priority)} 
                   />
