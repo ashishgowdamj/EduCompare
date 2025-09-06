@@ -24,7 +24,6 @@ import DeadlineTracker from '../../components/DeadlineTracker';
 import UpdatesFeed from '../../components/UpdatesFeed';
 import ApplicationProgress from '../../components/ApplicationProgress';
 import SmartQuickActions from '../../components/SmartQuickActions';
-import DashboardAnalytics from '../../components/DashboardAnalytics';
 
 // Types
 interface College {
@@ -378,8 +377,6 @@ const HomeScreen = () => {
 
       <View style={styles.content}>
         {/* Personalized Dashboard Components */}
-        <DashboardAnalytics />
-        
         <SmartQuickActions />
         
         <DeadlineTracker />
