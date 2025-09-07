@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Body } from './Typography';
 import { theme } from '../constants/theme';
 
@@ -12,21 +13,29 @@ const actions = [
     id: 'compare',
     title: 'Compare Colleges',
     icon: 'git-compare',
+    color: '#2196F3',
+    gradient: ['#2196F3', '#1976D2'],
   },
   {
     id: 'saved',
     title: 'Saved Colleges',
     icon: 'bookmark',
+    color: '#4CAF50',
+    gradient: ['#4CAF50', '#388E3C'],
   },
   {
     id: 'exams',
     title: 'Entrance Exams',
     icon: 'document-text',
+    color: '#FF9800',
+    gradient: ['#FF9800', '#F57C00'],
   },
   {
     id: 'scholarships',
     title: 'Scholarships',
     icon: 'school',
+    color: '#9C27B0',
+    gradient: ['#9C27B0', '#7B1FA2'],
   },
 ];
 
@@ -49,14 +58,19 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionPress }) => {
             style={styles.actionCard}
             onPress={() => onActionPress(action.id)}
           >
-            <View style={styles.iconCircle}>
+            <LinearGradient
+              colors={action.gradient}
+              style={styles.iconCircle}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
               <Ionicons 
                 name={action.icon as any} 
                 size={24} 
-                color={theme.colors.icon.accent}
+                color="#fff"
                 style={styles.actionIcon}
               />
-            </View>
+            </LinearGradient>
             <Body style={styles.actionTitle}>{action.title}</Body>
           </TouchableOpacity>
         ))}
@@ -83,29 +97,39 @@ const styles = StyleSheet.create({
     width: ACTION_WIDTH,
     marginRight: 12,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 3,
+        elevation: 6,
       },
     }),
   },
   iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: theme.colors.icon.accent + '20',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   actionIcon: {
     textAlign: 'center',

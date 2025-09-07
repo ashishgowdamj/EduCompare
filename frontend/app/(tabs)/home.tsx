@@ -355,21 +355,34 @@ const HomeScreen = () => {
 
   const renderListHeader = () => (
     <View>
-      {/* Stats Section */}
+      {/* Enhanced Stats Section */}
       <View style={styles.statsSection}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>500+</Text>
-          <Text style={styles.statLabel}>Colleges</Text>
+        <View style={styles.statCard}>
+          <View style={styles.statIconContainer}>
+            <Ionicons name="school" size={24} color="#2196F3" />
+          </View>
+          <View style={styles.statContent}>
+            <Text style={styles.statNumber}>500+</Text>
+            <Text style={styles.statLabel}>Colleges</Text>
+          </View>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>50+</Text>
-          <Text style={styles.statLabel}>Cities</Text>
+        <View style={styles.statCard}>
+          <View style={styles.statIconContainer}>
+            <Ionicons name="location" size={24} color="#4CAF50" />
+          </View>
+          <View style={styles.statContent}>
+            <Text style={styles.statNumber}>50+</Text>
+            <Text style={styles.statLabel}>Cities</Text>
+          </View>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>100+</Text>
-          <Text style={styles.statLabel}>Courses</Text>
+        <View style={styles.statCard}>
+          <View style={styles.statIconContainer}>
+            <Ionicons name="library" size={24} color="#FF9800" />
+          </View>
+          <View style={styles.statContent}>
+            <Text style={styles.statNumber}>100+</Text>
+            <Text style={styles.statLabel}>Courses</Text>
+          </View>
         </View>
       </View>
 
@@ -429,17 +442,26 @@ const HomeScreen = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#2196F3" translucent />
       
-      {/* Fixed Header */}
+      {/* Enhanced Fixed Header */}
       <LinearGradient
-        colors={['#2196F3', '#1976D2']}
+        colors={['#2196F3', '#1976D2', '#1565C0']}
         style={[styles.stickyHeader, { paddingTop: insets.top + 10 }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
-          <Text style={styles.stickyHeaderTitle}>College Finder</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.stickyHeaderTitle}>College Finder</Text>
+              <Text style={styles.stickyHeaderSubtitle}>Find your perfect college match</Text>
+            </View>
+            <TouchableOpacity style={styles.notificationButton}>
+              <Ionicons name="notifications-outline" size={24} color="#fff" />
+              <View style={styles.notificationBadge} />
+            </TouchableOpacity>
+          </View>
           
-          {/* Search Bar */}
+          {/* Enhanced Search Bar */}
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
             <TextInput
@@ -458,25 +480,31 @@ const HomeScreen = () => {
                 <Ionicons name="close-circle" size={20} color="#666" />
               </TouchableOpacity>
             )}
+            <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
+              <Ionicons name="options-outline" size={20} color="#2196F3" />
+            </TouchableOpacity>
           </View>
 
-          {/* Popular Searches */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.popularTags}
-            style={styles.popularScrollView}
-          >
-            {popularSearches.map((term, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.popularTag}
-                onPress={() => handlePopularSearch(term)}
-              >
-                <Text style={styles.popularTagText}>{term}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {/* Enhanced Popular Searches */}
+          <View style={styles.popularSearchesContainer}>
+            <Text style={styles.popularTitle}>Popular searches</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.popularTags}
+              style={styles.popularScrollView}
+            >
+              {popularSearches.map((term, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.popularTag}
+                  onPress={() => handlePopularSearch(term)}
+                >
+                  <Text style={styles.popularTagText}>{term}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
       </LinearGradient>
 
@@ -529,7 +557,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   sectionCard: {
     backgroundColor: '#fff',
@@ -615,16 +644,21 @@ const styles = StyleSheet.create({
   },
   collegeCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#EAECEE',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    marginHorizontal: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   collegeName: {
     fontSize: 16,
@@ -667,6 +701,7 @@ const styles = StyleSheet.create({
   },
   flatListContent: {
     paddingBottom: 100, // Space for FAB
+    paddingTop: 8,
   },
   // Hero Section
   heroSection: {
@@ -691,22 +726,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 22,
   },
-  // Search
+  // Enhanced Search
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 4,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    elevation: 2,
+    paddingVertical: 8,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
     width: '100%',
   },
   searchIcon: {
@@ -717,102 +752,144 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#333',
+    fontFamily: 'SpaceGrotesk-Regular',
   },
   clearButton: {
     padding: 4,
+    marginRight: 8,
   },
-  // Popular Searches
-  popularSearches: {
+  filterButton: {
+    padding: 8,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+  },
+  // Enhanced Popular Searches
+  popularSearchesContainer: {
     width: '100%',
   },
   popularTitle: {
     fontSize: 14,
-    color: '#E3F2FD',
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   popularTags: {
     paddingRight: 20,
   },
   popularTag: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   popularTagText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  // Stats Section
+  // Enhanced Stats Section
   statsSection: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingVertical: 16,
     paddingHorizontal: 16,
-    marginHorizontal: 16,
     marginTop: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#EAECEE',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  statItem: {
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 4,
+    flexDirection: 'row',
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statContent: {
     flex: 1,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#2196F3',
-    marginBottom: 4,
+    color: '#333',
+    marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 10,
-  },
-  // Sticky Header
+  // Enhanced Sticky Header
   stickyHeader: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    elevation: 4,
+    paddingBottom: 20,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     zIndex: 10,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   headerContent: {
-    alignItems: 'center',
+    alignItems: 'stretch',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
   stickyHeaderTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 16,
+    marginBottom: 4,
+  },
+  stickyHeaderSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 8,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
   },
   sectionDivider: {
-    height: 1,
-    backgroundColor: '#EAECEE',
-    marginVertical: 12,
-    marginHorizontal: 4,
+    height: 8,
+    backgroundColor: 'transparent',
+    marginVertical: 8,
   },
   popularScrollView: {
     maxHeight: 40,
