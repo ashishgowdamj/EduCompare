@@ -9,13 +9,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { router } from 'expo-router';
+import { theme } from '../constants/theme';
 
 interface QuickAction {
   id: string;
   title: string;
   description: string;
-  icon: string;
-  color: string;
+  icon: keyof typeof Ionicons.glyphMap;
   action: () => void;
   priority: number;
 }
@@ -36,9 +36,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'setup-preferences',
       title: 'Set Up Preferences',
       description: 'Tell us about your goals',
-      icon: 'material-symbols:settings',
-      color: '#2196F3',
-      action: () => router.push('/(tabs)/home'),
+      icon: 'settings',
+      action: () => router.push('/preferences-setup'),
       priority: 1,
     });
 
@@ -46,9 +45,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'choose-field',
       title: 'Choose Your Field',
       description: 'Select your area of study',
-      icon: 'material-symbols:school',
-      color: '#4CAF50',
-      action: () => router.push('/(tabs)/home'),
+      icon: 'school',
+      action: () => router.push('/preferences-setup'),
       priority: 2,
     });
 
@@ -58,9 +56,8 @@ const SmartQuickActions: React.FC = () => {
         id: 'add-more-favorites',
         title: 'Add More Colleges',
         description: 'Build your shortlist',
-        icon: 'material-symbols:favorite-outline',
-        color: '#FF5722',
-        action: () => router.push('/(tabs)/home'),
+        icon: 'heart-outline',
+        action: () => router.push('/(tabs)/favorites'),
         priority: 8,
       });
     }
@@ -71,8 +68,7 @@ const SmartQuickActions: React.FC = () => {
         id: 'compare-colleges',
         title: 'Compare Colleges',
         description: 'See side-by-side comparison',
-        icon: 'material-symbols:analytics',
-        color: '#9C27B0',
+        icon: 'git-compare',
         action: () => router.push('/(tabs)/compare'),
         priority: 7,
       });
@@ -83,9 +79,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'exam-prep',
       title: 'Exam Preparation',
       description: 'Prepare for entrance exams',
-      icon: 'material-symbols:menu-book',
-      color: '#607D8B',
-      action: () => router.push('/(tabs)/home'),
+      icon: 'book',
+      action: () => router.push('/exams'),
       priority: 6,
     });
 
@@ -94,9 +89,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'scholarships',
       title: 'Find Scholarships',
       description: 'Discover funding opportunities',
-      icon: 'material-symbols:emoji-events',
-      color: '#FF9800',
-      action: () => router.push('/(tabs)/home'),
+      icon: 'trophy',
+      action: () => router.push('/scholarships'),
       priority: 5,
     });
 
@@ -106,12 +100,8 @@ const SmartQuickActions: React.FC = () => {
         id: 'check-deadlines',
         title: 'Check Deadlines',
         description: 'View upcoming dates',
-        icon: 'material-symbols:calendar-month',
-        color: '#E91E63',
-        action: () => {
-          // Could navigate to deadlines section
-          console.log('Navigate to deadlines');
-        },
+        icon: 'calendar',
+        action: () => router.push('/(tabs)/home'),
         priority: 4,
       });
     }
@@ -121,12 +111,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'virtual-tours',
       title: 'Virtual Tours',
       description: 'Explore campus online',
-      icon: 'material-symbols:videocam',
-      color: '#00BCD4',
-      action: () => {
-        // Could navigate to virtual tours
-        console.log('Navigate to virtual tours');
-      },
+      icon: 'videocam',
+      action: () => console.log('Navigate to virtual tours'),
       priority: 3,
     });
 
@@ -135,12 +121,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'career-guidance',
       title: 'Career Guidance',
       description: 'Explore career options',
-      icon: 'material-symbols:work',
-      color: '#607D8B',
-      action: () => {
-        // Could navigate to career section
-        console.log('Navigate to career guidance');
-      },
+      icon: 'briefcase',
+      action: () => console.log('Navigate to career guidance'),
       priority: 2,
     });
 
@@ -149,12 +131,8 @@ const SmartQuickActions: React.FC = () => {
       id: 'study-abroad',
       title: 'Study Abroad',
       description: 'International opportunities',
-      icon: 'material-symbols:flight',
-      color: '#795548',
-      action: () => {
-        // Could navigate to study abroad section
-        console.log('Navigate to study abroad');
-      },
+      icon: 'airplane',
+      action: () => console.log('Navigate to study abroad'),
       priority: 1,
     });
 
@@ -173,7 +151,7 @@ const SmartQuickActions: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="flash" size={20} color="#2196F3" />
+        <Ionicons name="flash" size={20} color={theme.colors.icon.accent} />
         <Text style={styles.title}>Smart Actions</Text>
         <Text style={styles.subtitle}>Personalized for you</Text>
       </View>
@@ -186,14 +164,14 @@ const SmartQuickActions: React.FC = () => {
         {quickActions.map((action) => (
           <TouchableOpacity
             key={action.id}
-            style={[styles.actionCard, { borderLeftColor: action.color }]}
+            style={[styles.actionCard, { borderLeftColor: theme.colors.icon.accent }]}
             onPress={action.action}
           >
-            <View style={[styles.iconContainer, { backgroundColor: action.color + '20' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: theme.colors.icon.accent + '20' }]}> 
               <Ionicons 
-                name="settings" 
+                name={action.icon}
                 size={24} 
-                color={action.color} 
+                color={theme.colors.icon.accent} 
               />
             </View>
             
@@ -209,7 +187,7 @@ const SmartQuickActions: React.FC = () => {
               <Ionicons 
                 name="arrow-forward" 
                 size={16} 
-                color={action.color} 
+                color={theme.colors.icon.accent} 
               />
             </View>
           </TouchableOpacity>

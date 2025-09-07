@@ -253,14 +253,12 @@ const HomeScreen = () => {
         router.push('/(tabs)/favorites' as any);
         break;
       case 'exams':
-        // Navigate to home with exam filter
-        setSearchQuery('exams');
-        handleSearch();
+        // Navigate to dedicated Exams screen
+        router.push('/exams' as any);
         break;
       case 'scholarships':
-        // Navigate to home with scholarship filter
-        setSearchQuery('scholarships');
-        handleSearch();
+        // Navigate to dedicated Scholarships screen
+        router.push('/scholarships' as any);
         break;
       default:
         break;

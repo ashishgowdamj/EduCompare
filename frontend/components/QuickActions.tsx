@@ -1,50 +1,32 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform, ColorValue } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Body } from './Typography';
-import { LinearGradient } from 'expo-linear-gradient';
+import { theme } from '../constants/theme';
 
 const { width } = Dimensions.get('window');
 const ACTION_WIDTH = (width - 64) / 2.5;
-
-const getGradientColors = (id: string): [ColorValue, ColorValue, ...ColorValue[]] => {
-  const gradients: { [key: string]: [ColorValue, ColorValue, ...ColorValue[]] } = {
-    compare: ['#4c669f', '#3b5998', '#192f6a'],
-    saved: ['#11998e', '#38ef7d'],
-    exams: ['#f46b45', '#eea849'],
-    scholarships: ['#8e2de2', '#4a00e0']
-  };
-  return gradients[id] || ['#4c669f', '#3b5998'];
-};
 
 const actions = [
   {
     id: 'compare',
     title: 'Compare Colleges',
     icon: 'git-compare',
-    color: '#4CAF50',
-    gradient: getGradientColors('compare'),
   },
   {
     id: 'saved',
     title: 'Saved Colleges',
     icon: 'bookmark',
-    color: '#FF9800',
-    gradient: getGradientColors('saved'),
   },
   {
     id: 'exams',
     title: 'Entrance Exams',
     icon: 'document-text',
-    color: '#9C27B0',
-    gradient: getGradientColors('exams'),
   },
   {
     id: 'scholarships',
     title: 'Scholarships',
     icon: 'school',
-    color: '#2196F3',
-    gradient: getGradientColors('scholarships'),
   },
 ];
 
@@ -67,19 +49,14 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionPress }) => {
             style={styles.actionCard}
             onPress={() => onActionPress(action.id)}
           >
-            <LinearGradient
-              colors={action.gradient}
-              style={styles.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
+            <View style={styles.iconCircle}>
               <Ionicons 
                 name={action.icon as any} 
                 size={24} 
-                color="#fff" 
+                color={theme.colors.icon.accent}
                 style={styles.actionIcon}
               />
-            </LinearGradient>
+            </View>
             <Body style={styles.actionTitle}>{action.title}</Body>
           </TouchableOpacity>
         ))}
@@ -121,13 +98,14 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  gradient: {
+  iconCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: theme.colors.icon.accent + '20',
   },
   actionIcon: {
     textAlign: 'center',

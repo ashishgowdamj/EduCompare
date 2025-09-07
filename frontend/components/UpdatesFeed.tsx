@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../constants/theme';
 
 type UpdateType = 'news' | 'deadline' | 'admission' | 'scholarship';
 
@@ -41,7 +42,7 @@ const UpdatesFeed: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="notifications" size={20} color="#2196F3" />
+          <Ionicons name="notifications" size={20} color={theme.colors.icon.accent} />
           <Text style={styles.title}>Updates</Text>
         </View>
       </View>
@@ -52,7 +53,7 @@ const UpdatesFeed: React.FC = () => {
             <Ionicons 
               name={getUpdateIcon(update.type)}
               size={18}
-              color="#2196F3"
+              color={theme.colors.icon.default}
               style={styles.icon}
             />
             <View style={styles.updateContent}>

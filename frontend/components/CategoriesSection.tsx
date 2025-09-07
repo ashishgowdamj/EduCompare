@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Body } from './Typography';
+import { theme } from '../constants/theme';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 64) / 3.5;
@@ -51,7 +52,7 @@ const CategoriesSection: React.FC<CategoriesSectionProps> = ({ onSelectCategory,
               <Ionicons 
                 name={category.icon as any} 
                 size={20} 
-                color={selectedCategory === category.id ? '#2196F3' : '#666'} 
+                color={selectedCategory === category.id ? theme.colors.icon.accent : theme.colors.icon.default} 
               />
             </View>
             <Body style={[
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   seeAll: {
-    color: '#2196F3',
+    color: theme.colors.icon.accent,
     fontSize: 14,
   },
   categoriesContainer: {
@@ -130,10 +131,10 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 12,
     textAlign: 'center',
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   selectedCategoryName: {
-    color: '#2196F3',
+    color: theme.colors.icon.accent,
     fontWeight: '500',
   },
 });

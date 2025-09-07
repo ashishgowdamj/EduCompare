@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { H3, Body, Caption } from './Typography';
+import { theme } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
@@ -72,7 +73,7 @@ const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll
                 />
               ) : (
                 <View style={[styles.collegeImage, styles.placeholderImage]}>
-                  <Ionicons name="school" size={32} color="#666" />
+                  <Ionicons name="school" size={32} color={theme.colors.icon.default} />
                 </View>
               )}
               <LinearGradient
@@ -98,7 +99,7 @@ const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll
                 {college.name}
               </H3>
               <View style={styles.locationContainer}>
-                <Ionicons name="location" size={14} color="#666" />
+                <Ionicons name="location" size={14} color={theme.colors.icon.default} />
                 <Body style={styles.locationText}>
                   {college.city}, {college.state}
                 </Body>

@@ -19,6 +19,13 @@ export const theme = {
     textLight: '#999999',
     border: '#E0E0E0',
     shadow: '#000000',
+    icon: {
+      default: '#6B7280',
+      accent: '#2196F3',
+      muted: '#9CA3AF',
+      success: '#10B981',
+      danger: '#EF4444',
+    },
   },
   spacing: {
     xs: 4,
