@@ -29,7 +29,7 @@ const ExamsScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         {items.map(item => (
-          <TouchableOpacity key={item.id} style={styles.card} activeOpacity={0.8}>
+          <TouchableOpacity key={item.id} style={styles.card} activeOpacity={0.8} onPress={() => router.push(`/exams/${item.id}` as any)}>
             <View style={styles.cardIcon}>
               <Ionicons name="book" size={18} color={theme.colors.icon.accent} />
             </View>
