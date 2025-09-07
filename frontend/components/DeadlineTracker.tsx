@@ -204,6 +204,7 @@ const DeadlineTracker: React.FC = () => {
           
           return (
             <View key={deadline.id} style={[styles.deadlineCard, getUrgencyStyle(daysUntil)]}>
+              <View style={[styles.accentBar, { backgroundColor: getPriorityColor(deadline.priority) }]} />
               <View style={styles.deadlineHeader}>
                 <View style={styles.deadlineIconContainer}>
                   <Ionicons 
@@ -297,8 +298,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginRight: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    position: 'relative',
   },
   urgent: {
     borderLeftColor: '#FF5722',
@@ -309,8 +309,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fffbf0',
   },
   normal: {
-    borderLeftColor: '#4CAF50',
     backgroundColor: '#f8f9fa',
+  },
+  accentBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   deadlineHeader: {
     flexDirection: 'row',

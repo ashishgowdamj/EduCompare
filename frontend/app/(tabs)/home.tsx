@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -800,10 +800,11 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 4,
-    flexDirection: 'row',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginHorizontal: 6,
+    flexDirection: 'column',
     alignItems: 'center',
     ...Platform.select({
       ios: {
@@ -818,25 +819,26 @@ const styles = StyleSheet.create({
     }),
   },
   statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#F8F9FA',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 0,
+    marginBottom: 8,
   },
   statContent: {
-    flex: 1,
+    alignItems: 'center',
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     fontWeight: '500',
   },
