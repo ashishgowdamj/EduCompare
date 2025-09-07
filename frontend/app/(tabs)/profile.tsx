@@ -143,6 +143,12 @@ export default function Profile() {
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user.name}</Text>
             <Text style={styles.userEmail}>{user.email}</Text>
+            {!!user.phone && (
+              <Text style={styles.userMeta}>Phone: {user.phone}</Text>
+            )}
+            {!!user.dob && (
+              <Text style={styles.userMeta}>DOB: {user.dob}</Text>
+            )}
           </View>
           
           <TouchableOpacity style={styles.editButton} onPress={() => router.push('/edit-profile' as any)}>
@@ -302,6 +308,11 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#666',
+    marginTop: 2,
+  },
+  userMeta: {
+    fontSize: 13,
+    color: '#6B7280',
     marginTop: 2,
   },
   editButton: {
