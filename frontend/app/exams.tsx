@@ -14,6 +14,18 @@ const ExamsScreen: React.FC = () => {
     { id: 'neet', title: 'NEET', subtitle: 'Medical Entrance' },
     { id: 'cat', title: 'CAT', subtitle: 'MBA Entrance' },
     { id: 'gate', title: 'GATE', subtitle: 'Postgraduate Engineering' },
+    { id: 'kcet', title: 'KCET', subtitle: 'Karnataka Common Entrance Test' },
+    { id: 'mht-cet', title: 'MHT-CET', subtitle: 'Maharashtra CET for Engineering/Pharmacy' },
+    { id: 'wbjee', title: 'WBJEE', subtitle: 'West Bengal Joint Entrance Examination' },
+    { id: 'comedk', title: 'COMEDK UGET', subtitle: 'Consortium of Medical, Engineering & Dental Colleges of Karnataka' },
+    { id: 'bitsat', title: 'BITSAT', subtitle: 'Birla Institute Admission Test' },
+    { id: 'viteee', title: 'VITEEE', subtitle: 'VIT Engineering Entrance Exam' },
+    { id: 'srmjeee', title: 'SRMJEEE', subtitle: 'SRM Joint Engineering Entrance Exam' },
+    { id: 'amueee', title: 'AMUEEE', subtitle: 'AMU Engineering Entrance Exam' },
+    { id: 'kiitee', title: 'KIITEE', subtitle: 'KIIT Entrance Examination' },
+    { id: 'ipu-cet', title: 'IPU-CET', subtitle: 'GGSIPU Common Entrance Test' },
+    { id: 'ap-eamcet', title: 'AP EAMCET', subtitle: 'Andhra Pradesh EAPCET' },
+    { id: 'ts-eamcet', title: 'TS EAMCET', subtitle: 'Telangana EAMCET' },
   ];
 
   return (

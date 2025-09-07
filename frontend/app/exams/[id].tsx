@@ -70,6 +70,185 @@ const EXAM_CONTENT: Record<string, { title: string; subtitle: string; overview: 
       { label: 'Preparation Tips', url: 'https://gate.iitk.ac.in' },
     ],
   },
+  kcet: {
+    title: 'KCET',
+    subtitle: 'Karnataka Common Entrance Test',
+    overview:
+      'KCET is conducted by the Karnataka Examinations Authority (KEA) for admissions to undergraduate courses in engineering, pharmacy, and agriculture in Karnataka.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics (PCM)',
+      'Biology for applicable streams',
+      'State board-aligned topics',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://cetonline.karnataka.gov.in/kea/' },
+      { label: 'Sample Papers', url: 'https://cetonline.karnataka.gov.in/kea/' },
+      { label: 'Preparation Tips', url: 'https://cetonline.karnataka.gov.in/kea/' },
+    ],
+  },
+  'mht-cet': {
+    title: 'MHT-CET',
+    subtitle: 'Maharashtra Common Entrance Test',
+    overview:
+      'MHT-CET is conducted by the State CET Cell, Maharashtra for admissions to engineering and pharmacy undergraduate programs in Maharashtra.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics (PCM)',
+      'Biology for Pharmacy (PCB)',
+      'MSBSHSE syllabus focus',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://cetcell.mahacet.org/' },
+      { label: 'Sample Papers', url: 'https://cetcell.mahacet.org/' },
+      { label: 'Preparation Tips', url: 'https://cetcell.mahacet.org/' },
+    ],
+  },
+  wbjee: {
+    title: 'WBJEE',
+    subtitle: 'West Bengal Joint Entrance Examination',
+    overview:
+      'WBJEE is conducted by WBJEEB for admissions to undergraduate engineering and technology courses in West Bengal.',
+    syllabus: [
+      'Mathematics, Physics, Chemistry',
+      'State board-aligned topics',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://wbjeeb.in/wbjee/' },
+      { label: 'Sample Papers', url: 'https://wbjeeb.in/wbjee/' },
+      { label: 'Preparation Tips', url: 'https://wbjeeb.in/wbjee/' },
+    ],
+  },
+  comedk: {
+    title: 'COMEDK UGET',
+    subtitle: 'Consortium of Medical, Engineering & Dental Colleges of Karnataka',
+    overview:
+      'COMEDK UGET is an entrance examination for admissions to private engineering colleges in Karnataka under the COMEDK consortium.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics',
+      'Based on 12th standard curriculum',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://www.comedk.org/' },
+      { label: 'Sample Papers', url: 'https://www.comedk.org/' },
+      { label: 'Preparation Tips', url: 'https://www.comedk.org/' },
+    ],
+  },
+  bitsat: {
+    title: 'BITSAT',
+    subtitle: 'Birla Institute Admission Test',
+    overview:
+      'BITSAT is an online entrance exam for admission to Integrated First Degree programmes at BITS Pilani, Goa and Hyderabad campuses.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics',
+      'English Proficiency & Logical Reasoning',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://www.bitsadmission.com/' },
+      { label: 'Sample Papers', url: 'https://www.bitsadmission.com/' },
+      { label: 'Preparation Tips', url: 'https://www.bitsadmission.com/' },
+    ],
+  },
+  viteee: {
+    title: 'VITEEE',
+    subtitle: 'VIT Engineering Entrance Exam',
+    overview:
+      'VITEEE is conducted by VIT for admission to B.Tech programmes at VIT Vellore, Chennai, AP and Bhopal campuses.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics/Biology',
+      'English & Aptitude section',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://viteee.vit.ac.in/' },
+      { label: 'Sample Papers', url: 'https://viteee.vit.ac.in/' },
+      { label: 'Preparation Tips', url: 'https://viteee.vit.ac.in/' },
+    ],
+  },
+  srmjeee: {
+    title: 'SRMJEEE',
+    subtitle: 'SRM Joint Engineering Entrance Exam',
+    overview:
+      'SRMJEEE is an entrance test for admission to B.Tech programmes at SRM Institute of Science and Technology campuses.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics/Biology',
+      'Aptitude & English',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://www.srmist.edu.in/admission-india/engineering/srmjeee/' },
+      { label: 'Sample Papers', url: 'https://www.srmist.edu.in/admission-india/engineering/srmjeee/' },
+      { label: 'Preparation Tips', url: 'https://www.srmist.edu.in/admission-india/engineering/srmjeee/' },
+    ],
+  },
+  amueee: {
+    title: 'AMUEEE',
+    subtitle: 'AMU Engineering Entrance Exam',
+    overview:
+      'AMUEEE is conducted by Aligarh Muslim University for admissions to undergraduate engineering programmes.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://www.amu.ac.in/' },
+      { label: 'Sample Papers', url: 'https://www.amu.ac.in/' },
+      { label: 'Preparation Tips', url: 'https://www.amu.ac.in/' },
+    ],
+  },
+  kiitee: {
+    title: 'KIITEE',
+    subtitle: 'KIIT Entrance Examination',
+    overview:
+      'KIITEE is an all-India entrance examination conducted by KIIT for admissions to various UG and PG programmes including engineering.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://kiitee.kiit.ac.in/' },
+      { label: 'Sample Papers', url: 'https://kiitee.kiit.ac.in/' },
+      { label: 'Preparation Tips', url: 'https://kiitee.kiit.ac.in/' },
+    ],
+  },
+  'ipu-cet': {
+    title: 'IPU-CET',
+    subtitle: 'GGSIPU Common Entrance Test',
+    overview:
+      'IPU-CET is conducted by Guru Gobind Singh Indraprastha University for admissions to various undergraduate programmes.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://ipu.ac.in/' },
+      { label: 'Sample Papers', url: 'https://ipu.ac.in/' },
+      { label: 'Preparation Tips', url: 'https://ipu.ac.in/' },
+    ],
+  },
+  'ap-eamcet': {
+    title: 'AP EAMCET',
+    subtitle: 'Andhra Pradesh EAPCET',
+    overview:
+      'AP EAMCET (EAPCET) is conducted by APSCHE for admissions to engineering, agriculture and pharmacy courses in Andhra Pradesh.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics (Engineering stream)',
+      'Biology for Agriculture/Pharmacy streams',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://cets.apsche.ap.gov.in/EAPCET' },
+      { label: 'Sample Papers', url: 'https://cets.apsche.ap.gov.in/EAPCET' },
+      { label: 'Preparation Tips', url: 'https://cets.apsche.ap.gov.in/EAPCET' },
+    ],
+  },
+  'ts-eamcet': {
+    title: 'TS EAMCET',
+    subtitle: 'Telangana EAMCET',
+    overview:
+      'TS EAMCET (EAPCET) is conducted by TSCHE for admissions to engineering, agriculture and pharmacy courses in Telangana.',
+    syllabus: [
+      'Physics, Chemistry, Mathematics (Engineering stream)',
+      'Biology for Agriculture/Pharmacy streams',
+    ],
+    resources: [
+      { label: 'Official Website', url: 'https://eapcet.tsche.ac.in/' },
+      { label: 'Sample Papers', url: 'https://eapcet.tsche.ac.in/' },
+      { label: 'Preparation Tips', url: 'https://eapcet.tsche.ac.in/' },
+    ],
+  },
 };
 
 const ExamDetailScreen: React.FC = () => {
