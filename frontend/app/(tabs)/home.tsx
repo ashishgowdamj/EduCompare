@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Notifications from 'expo-notifications';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -95,6 +96,8 @@ const HomeScreen = () => {
   const [popularSearches] = useState([
     'IIT', 'NIT', 'IIIT', 'Engineering', 'Medical', 'MBA', 'Delhi', 'Mumbai', 'Bangalore'
   ]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
 
   // Mock favorites and compare hooks
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -129,6 +132,52 @@ const HomeScreen = () => {
 
   useEffect(() => {
     initializeData();
+  }, []);
+
+  useEffect(() => {
+    // Configure foreground behavior
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({ 
+        shouldShowAlert: true, 
+        shouldPlaySound: false, 
+        shouldSetBadge: false,
+        // Newer SDK fields
+        shouldShowBanner: true as any,
+        shouldShowList: true as any,
+      })
+    });
+
+    const registerAsync = async () => {
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') return;
+
+        const tokenResponse = await Notifications.getExpoPushTokenAsync();
+        setExpoPushToken(tokenResponse.data);
+      } catch (e) {
+        console.log('Notifications permission/token error:', e);
+      }
+    };
+
+    registerAsync();
+
+    const receivedSub = Notifications.addNotificationReceivedListener(() => {
+      setUnreadCount((c) => c + 1);
+    });
+    const responseSub = Notifications.addNotificationResponseReceivedListener(() => {
+      setUnreadCount(0);
+      router.push('/notifications' as any);
+    });
+
+    return () => {
+      receivedSub.remove();
+      responseSub.remove();
+    };
   }, []);
 
   const initializeData = async () => {
@@ -455,9 +504,13 @@ const HomeScreen = () => {
               <Text style={styles.stickyHeaderTitle}>College Finder</Text>
               <Text style={styles.stickyHeaderSubtitle}>Find your perfect college match</Text>
             </View>
-            <TouchableOpacity style={styles.notificationButton}>
+            <TouchableOpacity style={styles.notificationButton} onPress={() => { setUnreadCount(0); router.push('/notifications' as any); }}>
               <Ionicons name="notifications-outline" size={24} color="#fff" />
-              <View style={styles.notificationBadge} />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
           
@@ -887,6 +940,18 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#FF3B30',
+  },
+  notificationBadgeText: {
+    position: 'absolute',
+    top: -6,
+    right: -10,
+    backgroundColor: '#FF3B30',
+    color: '#fff',
+    borderRadius: 8,
+    overflow: 'hidden',
+    paddingHorizontal: 4,
+    fontSize: 10,
+    fontWeight: '700',
   },
   sectionDivider: {
     height: 8,

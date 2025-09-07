@@ -164,9 +164,10 @@ const SmartQuickActions: React.FC = () => {
         {quickActions.map((action) => (
           <TouchableOpacity
             key={action.id}
-            style={[styles.actionCard, { borderLeftColor: theme.colors.icon.accent }]}
+            style={styles.actionCard}
             onPress={action.action}
           >
+            <View style={[styles.accentBar, { backgroundColor: theme.colors.icon.accent }]} />
             <View style={[styles.iconContainer, { backgroundColor: theme.colors.icon.accent + '20' }]}> 
               <Ionicons 
                 name={action.icon}
@@ -235,10 +236,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginRight: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
     justifyContent: 'space-between',
     minHeight: 120,
+    position: 'relative',
+  },
+  accentBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   iconContainer: {
     width: 40,
