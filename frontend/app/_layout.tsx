@@ -5,6 +5,7 @@ import { FavoritesProvider } from '../contexts/FavoritesContext';
 import { CompareProvider } from '../contexts/CompareContext';
 import { PreferencesProvider } from '../contexts/PreferencesContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import * as SplashScreen from 'expo-splash-screen';
 import { View, Text, LogBox } from 'react-native';
@@ -40,6 +41,7 @@ function FontWrapper({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <FontWrapper>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
           <PreferencesProvider>
@@ -66,6 +68,7 @@ export default function RootLayout() {
           </PreferencesProvider>
         </AuthProvider>
       </SafeAreaProvider>
+      </GestureHandlerRootView>
     </FontWrapper>
   );
 }

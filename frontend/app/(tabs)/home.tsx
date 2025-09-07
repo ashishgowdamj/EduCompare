@@ -6,6 +6,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -166,8 +167,24 @@ const HomeScreen = () => {
 
     registerAsync();
 
-    const receivedSub = Notifications.addNotificationReceivedListener(() => {
+    const receivedSub = Notifications.addNotificationReceivedListener(async (notif) => {
       setUnreadCount((c) => c + 1);
+      try {
+        const item = {
+          id: String(Date.now()),
+          title: notif.request.content.title || 'Notification',
+          body: notif.request.content.body || '',
+          data: notif.request.content.data || {},
+          date: Date.now(),
+          read: false,
+        };
+        const stored = await AsyncStorage.getItem('notifications');
+        const arr = stored ? JSON.parse(stored) : [];
+        const next = [item, ...arr].slice(0, 100);
+        await AsyncStorage.setItem('notifications', JSON.stringify(next));
+      } catch (e) {
+        console.log('store notification error', e);
+      }
     });
     const responseSub = Notifications.addNotificationResponseReceivedListener(() => {
       setUnreadCount(0);
