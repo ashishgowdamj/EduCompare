@@ -28,6 +28,10 @@ export interface UserPreferences {
   // Entrance Exams
   entranceExams: string[];
   examScores?: { [examName: string]: number };
+
+  // App Settings
+  showRealName?: boolean; // privacy toggle for community features
+  themeMode?: 'system' | 'light' | 'dark';
 }
 
 export interface BrowsingHistory {
@@ -56,6 +60,9 @@ const defaultPreferences: UserPreferences = {
   feesPriority: 3,
   rankingPriority: 3,
   entranceExams: [],
+  // App Settings defaults
+  showRealName: true,
+  themeMode: 'system',
 };
 
 const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined);

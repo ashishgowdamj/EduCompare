@@ -73,6 +73,14 @@ export default function Profile() {
       onPress: () => router.push('/notifications' as any),
     },
     {
+      id: 'settings',
+      title: 'Settings',
+      subtitle: 'Privacy and appearance',
+      icon: 'settings',
+      color: '#607D8B',
+      onPress: () => router.push('/settings' as any),
+    },
+    {
       id: 'help',
       title: 'Help & Support',
       subtitle: 'Get assistance',
