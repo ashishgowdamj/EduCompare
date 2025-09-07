@@ -6,6 +6,8 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  phone?: string;
+  dob?: string; // ISO date string YYYY-MM-DD
 }
 
 interface AuthContextType {
