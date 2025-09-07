@@ -376,26 +376,33 @@ const HomeScreen = () => {
       <View style={styles.content}>
         {/* Personalized Dashboard Components */}
         <SmartQuickActions />
+        <View style={styles.sectionDivider} />
         
         <DeadlineTracker />
+        <View style={styles.sectionDivider} />
         
         <ApplicationProgress />
+        <View style={styles.sectionDivider} />
         
         <UpdatesFeed />
+        <View style={styles.sectionDivider} />
 
         <CategoriesSection
           selectedCategory={selectedCategory}
           onSelectCategory={handleCategorySelect}
         />
+        <View style={styles.sectionDivider} />
 
         <RecommendationsSection
           onViewAll={() => setSelectedCategory('All')}
         />
+        <View style={styles.sectionDivider} />
 
         <FeaturedColleges
           colleges={colleges.slice(0, 5)}
           onViewAll={() => setSelectedCategory('All')}
         />
+        <View style={styles.sectionDivider} />
 
         <QuickActions
           onActionPress={handleQuickAction}
@@ -426,6 +433,8 @@ const HomeScreen = () => {
       <LinearGradient
         colors={['#2196F3', '#1976D2']}
         style={[styles.stickyHeader, { paddingTop: insets.top + 10 }]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
           <Text style={styles.stickyHeaderTitle}>College Finder</Text>
@@ -516,11 +525,24 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F7FB',
   },
   content: {
     flex: 1,
     padding: 16,
+  },
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EAECEE',
+    padding: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   section: {
     marginTop: 24,
@@ -593,14 +615,16 @@ const styles = StyleSheet.create({
   },
   collegeCard: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#EAECEE',
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
   collegeName: {
     fontSize: 16,
@@ -672,10 +696,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 25,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 4,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -724,16 +750,18 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    marginHorizontal: 20,
-    marginTop: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 12,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#EAECEE',
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
     justifyContent: 'space-around',
     alignItems: 'center',
   },
@@ -768,6 +796,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     zIndex: 10,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
   headerContent: {
     alignItems: 'center',
@@ -777,6 +807,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 16,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#EAECEE',
+    marginVertical: 12,
+    marginHorizontal: 4,
   },
   popularScrollView: {
     maxHeight: 40,

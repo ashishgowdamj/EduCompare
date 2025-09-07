@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const ExamsScreen: React.FC = () => {
   const router = useRouter();
@@ -30,14 +31,23 @@ const ExamsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={theme.colors.icon.default} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Exam Preparation</Text>
-        {/* Right spacer to keep title centered */}
-        <View style={{ width: 22 }} />
-      </View>
+      <LinearGradient
+        colors={[theme.colors.icon.accent, '#1976D2']}
+        style={[styles.headerGradient, { paddingTop: insets.top + 10 }]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Exam Preparation</Text>
+            <Text style={styles.subtitle}>Browse popular entrance exams</Text>
+          </View>
+          <View style={{ width: 22 }} />
+        </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content}>
         {items.map(item => (
@@ -58,25 +68,34 @@ const ExamsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: { 
+  container: { flex: 1, backgroundColor: '#F5F7FB' },
+  headerGradient: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backBtn: { marginRight: 10 },
+  title: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  subtitle: { fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
+  content: { padding: 16 },
+  card: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 16, 
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1, 
-    borderBottomColor: '#E5E7EB',
+    padding: 14, 
+    borderRadius: 14, 
+    backgroundColor: '#fff', 
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 2,
   },
-  backBtn: { marginRight: 8 },
-  title: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: '#111827' },
-  content: { padding: 16 },
-  card: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, backgroundColor: '#F9FAFB', marginBottom: 12 },
   cardIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(33,150,243,0.12)', marginRight: 12 },
   cardBody: { flex: 1 },
   cardTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },

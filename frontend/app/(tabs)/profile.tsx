@@ -62,7 +62,7 @@ export default function Profile() {
       subtitle: 'View recent searches',
       icon: 'time',
       color: '#FF9800',
-      onPress: () => {},
+      onPress: () => router.push('/search-history'),
     },
     {
       id: 'notifications',
@@ -70,7 +70,7 @@ export default function Profile() {
       subtitle: 'Manage your preferences',
       icon: 'notifications',
       color: '#4CAF50',
-      onPress: () => {},
+      onPress: () => router.push('/notifications' as any),
     },
     {
       id: 'help',
@@ -78,7 +78,7 @@ export default function Profile() {
       subtitle: 'Get assistance',
       icon: 'help-circle',
       color: '#9C27B0',
-      onPress: () => {},
+      onPress: () => router.push('/help' as any),
     },
     {
       id: 'about',
@@ -86,7 +86,7 @@ export default function Profile() {
       subtitle: 'App version & info',
       icon: 'information-circle',
       color: '#607D8B',
-      onPress: () => {},
+      onPress: () => router.push('/about' as any),
     },
   ];
 
@@ -145,7 +145,7 @@ export default function Profile() {
             <Text style={styles.userEmail}>{user.email}</Text>
           </View>
           
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={() => router.push('/edit-profile' as any)}>
             <Ionicons name="create-outline" size={20} color="#2196F3" />
           </TouchableOpacity>
         </View>

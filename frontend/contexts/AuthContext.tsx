@@ -16,6 +16,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isFirstTime: boolean;
   setFirstTimeComplete: () => void;
+  updateUser: (updates: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,6 +78,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updateUser = async (updates: Partial<User>) => {
+    setUser(prev => {
+      const next = prev ? { ...prev, ...updates } : null;
+      if (next) {
+        AsyncStorage.setItem('user', JSON.stringify(next)).catch(() => {});
+      }
+      return next;
+    });
+  };
+
   const setFirstTimeComplete = async () => {
     await AsyncStorage.setItem('isFirstTime', 'false');
     setIsFirstTime(false);
@@ -91,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       isFirstTime,
       setFirstTimeComplete,
+      updateUser,
     }}>
       {children}
     </AuthContext.Provider>
