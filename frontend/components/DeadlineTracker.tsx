@@ -210,7 +210,7 @@ const DeadlineTracker: React.FC = () => {
                   <Ionicons 
                     name="time" 
                     size={18} 
-                    color={getPriorityColor(deadline.priority)} 
+                    color="#1976D2" 
                   />
                 </View>
                 <TouchableOpacity
