@@ -114,7 +114,33 @@ const FilterModal: React.FC<FilterModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Quick Filters */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Filters</Text>
+            <View style={styles.chipContainer}>
+              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('universityType', 'Government')}>
+                <Text style={styles.chipText}>Government</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('universityType', 'Private')}>
+                <Text style={styles.chipText}>Private</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.chip} onPress={() => { updateFilter('rankingFrom', 1); updateFilter('rankingTo', 100); }}>
+                <Text style={styles.chipText}>Top 100</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('maxFees', 100000)}>
+                <Text style={styles.chipText}>Fees ≤ ₹1L</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('city', 'Bangalore')}>
+                <Text style={styles.chipText}>Bangalore</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           {/* Fees Range */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Annual Fees (₹)</Text>
@@ -322,6 +348,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: height * 0.85,
+    minHeight: Math.min(560, height * 0.85),
   },
   header: {
     flexDirection: 'row',
@@ -343,6 +370,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   section: {
     marginVertical: 20,

@@ -246,7 +246,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
             </Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.viewButton}>
+          <TouchableOpacity style={styles.viewButton} onPress={onPress}>
             <Text style={styles.viewButtonText}>View Details</Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </TouchableOpacity>

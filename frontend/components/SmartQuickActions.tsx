@@ -46,7 +46,7 @@ const SmartQuickActions: React.FC = () => {
       title: 'Choose Your Field',
       description: 'Select your area of study',
       icon: 'school',
-      action: () => router.push('/preferences-setup'),
+      action: () => router.push('/choose-field' as any),
       priority: 2,
     });
 
@@ -94,27 +94,7 @@ const SmartQuickActions: React.FC = () => {
       priority: 5,
     });
 
-    // Application deadlines
-    if (favorites.length > 0) {
-      actions.push({
-        id: 'check-deadlines',
-        title: 'Check Deadlines',
-        description: 'View upcoming dates',
-        icon: 'calendar',
-        action: () => router.push('/(tabs)/home'),
-        priority: 4,
-      });
-    }
-
-    // Virtual tours
-    actions.push({
-      id: 'virtual-tours',
-      title: 'Virtual Tours',
-      description: 'Explore campus online',
-      icon: 'videocam',
-      action: () => console.log('Navigate to virtual tours'),
-      priority: 3,
-    });
+    // Removed: Application deadlines and Virtual tours per request
 
     // Career guidance
     actions.push({
@@ -122,7 +102,7 @@ const SmartQuickActions: React.FC = () => {
       title: 'Career Guidance',
       description: 'Explore career options',
       icon: 'briefcase',
-      action: () => console.log('Navigate to career guidance'),
+      action: () => router.push('/career-guidance'),
       priority: 2,
     });
 
