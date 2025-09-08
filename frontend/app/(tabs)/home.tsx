@@ -616,6 +616,8 @@ const HomeScreen = () => {
           </View>
         )}
       </TouchableOpacity>
+
+      {renderFilterModal()}
     </View>
   );
 };
