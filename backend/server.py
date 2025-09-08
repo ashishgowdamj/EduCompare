@@ -238,6 +238,20 @@ def college_helper(college) -> dict:
 async def root():
     return {"message": "College Search API"}
 
+@app.on_event("startup")
+async def create_indexes():
+    try:
+        # Basic field indexes for filtering and sorting
+        await db.colleges.create_index([("name", 1)])
+        await db.colleges.create_index([("city", 1)])
+        await db.colleges.create_index([("state", 1)])
+        await db.colleges.create_index([("annual_fees", 1)])
+        await db.colleges.create_index([("star_rating", -1)])
+        await db.colleges.create_index([("ranking", 1)])
+        await db.colleges.create_index([("courses_offered", 1)])  # multikey index
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Index creation failed or already exists: {e}")
+
 # College Routes
 @api_router.post("/colleges", response_model=CollegeResponse)
 async def create_college(college: CollegeCreate):
@@ -260,7 +274,8 @@ async def search_colleges(
     ranking_from: Optional[int] = Query(None, description="Ranking from"),
     ranking_to: Optional[int] = Query(None, description="Ranking to"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page")
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort: Optional[str] = Query("relevance", description="Sort key: relevance|ranking|fees_low|fees_high|rating_high"),
 ):
     # Build query filter
     filter_query = {}
@@ -322,8 +337,23 @@ async def search_colleges(
     # Get total count
     total = await db.colleges.count_documents(filter_query)
     
-    # Get colleges with pagination
-    cursor = db.colleges.find(filter_query).skip(skip).limit(limit)
+    # Build sorting
+    sort_fields = None
+    if sort and sort != "relevance":
+        if sort == "ranking":
+            sort_fields = [("ranking", 1)]  # lower rank number first (best first)
+        elif sort == "fees_low":
+            sort_fields = [("annual_fees", 1)]
+        elif sort == "fees_high":
+            sort_fields = [("annual_fees", -1)]
+        elif sort == "rating_high":
+            sort_fields = [("star_rating", -1)]
+
+    # Get colleges with sorting + pagination
+    cursor = db.colleges.find(filter_query)
+    if sort_fields:
+        cursor = cursor.sort(sort_fields)
+    cursor = cursor.skip(skip).limit(limit)
     colleges = await cursor.to_list(length=None)
     
     # Convert to response format

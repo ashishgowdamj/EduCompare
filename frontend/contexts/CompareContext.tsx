@@ -71,6 +71,11 @@ export const CompareProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  // Remove stray string/number children (e.g., whitespace) to avoid RN text warnings
+  const cleanedChildren = React.Children.toArray(children).filter(
+    (child) => typeof child !== 'string' && typeof child !== 'number'
+  );
+
   return (
     <CompareContext.Provider value={{
       compareList,
@@ -79,7 +84,7 @@ export const CompareProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isInCompare,
       clearCompare,
     }}>
-      {children}
+      {cleanedChildren}
     </CompareContext.Provider>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform, Image, Animated } from 'react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -115,6 +115,19 @@ const HomeScreen = () => {
   // Drawer state removed
   const [appliedPrefSeed, setAppliedPrefSeed] = useState(false);
   const suggestAbortRef = useRef<AbortController | null>(null);
+  const shimmer = useRef(new Animated.Value(0.6)).current;
+
+  // Start shimmer pulse for skeletons
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0.6, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
   // Mock favorites and compare hooks
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -503,6 +516,80 @@ const HomeScreen = () => {
     </TouchableOpacity>
   );
 
+  // Active filter chips helpers
+  const removeFilter = (key: string, value?: any) => {
+    const next = { ...activeFilters } as any;
+    if (key === 'courses' && Array.isArray(next.courses)) {
+      next.courses = next.courses.filter((c: string) => c !== value);
+      if (next.courses.length === 0) delete next.courses;
+    } else {
+      delete next[key];
+    }
+    setActiveFilters(next);
+    setPage(1);
+    searchColleges(true);
+  };
+
+  const renderActiveFilterChips = () => {
+    const chips: { key: string; label: string; value?: any }[] = [];
+    if (activeFilters.city) chips.push({ key: 'city', label: `City: ${activeFilters.city}` });
+    if (activeFilters.state) chips.push({ key: 'state', label: `State: ${activeFilters.state}` });
+    if (activeFilters.universityType) chips.push({ key: 'universityType', label: `Type: ${activeFilters.universityType}` });
+    if (activeFilters.minFees || activeFilters.maxFees) {
+      const min = activeFilters.minFees ? Math.round(activeFilters.minFees/100000*10)/10 : null;
+      const max = activeFilters.maxFees ? Math.round(activeFilters.maxFees/100000*10)/10 : null;
+      const range = `${min !== null ? `${min}L` : ''}${min!==null||max!==null ? '–' : ''}${max !== null ? `${max}L` : ''}`;
+      chips.push({ key: 'fees', label: `Fees: ${range}` });
+    }
+    if (activeFilters.minRating || activeFilters.maxRating) {
+      const parts = [] as string[];
+      if (activeFilters.minRating) parts.push(`≥ ${Number(activeFilters.minRating).toFixed(1)}★`);
+      if (activeFilters.maxRating) parts.push(`≤ ${Number(activeFilters.maxRating).toFixed(1)}★`);
+      chips.push({ key: 'rating', label: `Rating: ${parts.join(' ')}` });
+    }
+    if (activeFilters.rankingFrom || activeFilters.rankingTo) {
+      const from = activeFilters.rankingFrom ?? '';
+      const to = activeFilters.rankingTo ?? '';
+      chips.push({ key: 'ranking', label: `Rank: ${from}–${to}` });
+    }
+    if (Array.isArray(activeFilters.courses) && activeFilters.courses.length) {
+      activeFilters.courses.forEach((course: string) => chips.push({ key: 'courses', label: course, value: course }));
+    }
+
+    if (chips.length === 0) return null;
+
+    return (
+      <View style={styles.activeChipsRow}>
+        {chips.map((chip, idx) => (
+          <View key={`${chip.key}-${chip.label}-${idx}`} style={styles.filterChip}>
+            <Text style={styles.filterChipText}>{chip.label}</Text>
+            <TouchableOpacity onPress={() => {
+              if (chip.key === 'fees') {
+                removeFilter('minFees'); removeFilter('maxFees');
+              } else if (chip.key === 'rating') {
+                removeFilter('minRating'); removeFilter('maxRating');
+              } else if (chip.key === 'ranking') {
+                removeFilter('rankingFrom'); removeFilter('rankingTo');
+              } else if (chip.key === 'courses') {
+                removeFilter('courses', chip.value);
+              } else {
+                removeFilter(chip.key);
+              }
+            }} style={styles.filterChipClose}>
+              <Ionicons name="close" size={14} color="#1976D2" />
+            </TouchableOpacity>
+          </View>
+        ))}
+        {chips.length > 1 && (
+          <TouchableOpacity style={[styles.filterChip, { backgroundColor: '#E8F0FE', borderColor: '#C5D6FD' }]} onPress={clearFilters}>
+            <Ionicons name="close-circle" size={14} color="#1976D2" />
+            <Text style={[styles.filterChipText, { color: '#1976D2', marginLeft: 4 }]}>Clear all</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
   const renderFooter = () => {
     if (!searchLoading || colleges.length === 0) return null;
 
@@ -550,6 +637,9 @@ const HomeScreen = () => {
                 <View style={styles.skeletonTitle} />
                 <View style={styles.skeletonSubtitle} />
               </View>
+
+          {/* Active filter chips */}
+          {renderActiveFilterChips()}
               <View style={styles.skeletonBell} />
             </View>
             <View style={styles.searchContainer}>
@@ -563,14 +653,14 @@ const HomeScreen = () => {
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           {/* Skeleton cards */}
           {[...Array(5)].map((_, idx) => (
-            <View key={idx} style={styles.skeletonCard}>
+            <Animated.View key={idx} style={[styles.skeletonCard, { opacity: shimmer }]}>
               <View style={styles.skeletonLogo} />
               <View style={{ flex: 1 }}>
                 <View style={styles.skeletonLineWide} />
                 <View style={styles.skeletonLine} />
                 <View style={styles.skeletonLine} />
               </View>
-            </View>
+            </Animated.View>
           ))}
         </ScrollView>
       </View>
@@ -631,11 +721,11 @@ const HomeScreen = () => {
         <View style={styles.sectionDivider} />
 
         {searchLoading ? (
-          <View style={styles.sectionCard}>
+          <Animated.View style={[styles.sectionCard, { opacity: shimmer }]}>
             <View style={styles.skeletonLineWide} />
             <View style={styles.skeletonLine} />
             <View style={styles.skeletonLine} />
-          </View>
+          </Animated.View>
         ) : (
           <RecommendationsSection
             onViewAll={() => setSelectedCategory('All')}
@@ -644,7 +734,7 @@ const HomeScreen = () => {
         <View style={styles.sectionDivider} />
 
         {searchLoading ? (
-          <View style={styles.sectionCard}>
+          <Animated.View style={[styles.sectionCard, { opacity: shimmer }]}>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               {[...Array(3)].map((_, idx) => (
                 <View key={idx} style={{ width: 120 }}>
@@ -653,13 +743,12 @@ const HomeScreen = () => {
                 </View>
               ))}
             </View>
-          </View>
-        ) : (
-          <FeaturedColleges
-            colleges={colleges.slice(0, 5)}
-            onViewAll={() => setSelectedCategory('All')}
-          />
-        )}
+          </Animated.View>
+        ) : null}
+        <FeaturedColleges
+          colleges={colleges.slice(0, 5)}
+          onViewAll={() => setSelectedCategory('All')}
+        />
         <View style={styles.sectionDivider} />
 
         <QuickActions
@@ -1360,6 +1449,32 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
+  },
+  activeChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  filterChipText: {
+    color: '#1976D2',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  filterChipClose: {
+    marginLeft: 6,
+    padding: 2,
   },
   clearFiltersChip: {
     alignSelf: 'flex-start',
