@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
-
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { API } from '../utils/api';
 
 interface College {
   id: string;
@@ -48,7 +47,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     setIsLoading(true);
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/favorites/${user.id}`);
+      const response = await fetch(API.url(`/api/favorites/${user.id}`));
       if (response.ok) {
         const data = await response.json();
         setFavorites(data.favorites || []);
@@ -73,7 +72,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!user) return;
 
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/favorites`, {
+      const response = await fetch(API.url('/api/favorites'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +102,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!user) return;
 
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/favorites/${user.id}/${collegeId}`, {
+      const response = await fetch(API.url(`/api/favorites/${user.id}/${collegeId}`), {
         method: 'DELETE',
       });
 

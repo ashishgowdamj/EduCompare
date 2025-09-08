@@ -19,8 +19,9 @@ import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import * as Animatable from 'react-native-animatable';
+import { API } from '../../utils/api';
 
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+// Use shared API util for base URL
 const { width } = Dimensions.get('window');
 
 interface College {
@@ -93,7 +94,7 @@ export default function CollegeDetails() {
 
   const fetchCollegeDetails = async () => {
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/colleges/${id}`);
+      const response = await fetch(API.url(`/api/colleges/${id}`));
       if (response.ok) {
         const data = await response.json();
         setCollege(data);

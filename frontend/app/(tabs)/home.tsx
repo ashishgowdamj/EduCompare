@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform, Image } from 'react-native';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -7,12 +8,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePreferences } from '../../contexts/PreferencesContext';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
 
-// Mock environment variables
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+// Backend URL: use env if provided, else derive from Expo host (LAN IP) with default port 8000
+const hostUri = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoClient?.hostUri ?? '';
+const lanHost = hostUri ? hostUri.split(':')[0] : 'localhost';
+const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || `http://${lanHost}:8000`;
 
 // Components
 import HomeHero from '../../components/HomeHero';
@@ -81,6 +85,7 @@ interface Filters {
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { preferences } = usePreferences();
 
   // State for filters
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
@@ -88,7 +93,8 @@ const HomeScreen = () => {
 
   // State for search and pagination
   const [searchQuery, setSearchQuery] = useState('');
-  type Suggestion = { label: string; city?: string; logo_base64?: string };
+  type SuggestionType = 'college' | 'popular' | 'recent' | 'cta' | 'header';
+  type Suggestion = { label: string; city?: string; logo_base64?: string; type: SuggestionType };
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -107,6 +113,8 @@ const HomeScreen = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   // Drawer state removed
+  const [appliedPrefSeed, setAppliedPrefSeed] = useState(false);
+  const suggestAbortRef = useRef<AbortController | null>(null);
 
   // Mock favorites and compare hooks
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -143,6 +151,24 @@ const HomeScreen = () => {
     initializeData();
   }, []);
 
+  // Seed filters from PreferencesContext once on mount when available
+  useEffect(() => {
+    if (appliedPrefSeed) return;
+    const hasCourse = (preferences?.preferredCourses || []).length > 0;
+    const hasCity = (preferences?.preferredCities || []).length > 0;
+    const hasState = (preferences?.preferredStates || []).length > 0;
+    if (hasCourse || hasCity || hasState) {
+      const seeded: Record<string, any> = { ...activeFilters };
+      if (hasCourse) seeded.courses = preferences.preferredCourses;
+      if (hasCity) seeded.city = preferences.preferredCities[0];
+      if (hasState) seeded.state = preferences.preferredStates[0];
+      setActiveFilters(seeded);
+      setAppliedPrefSeed(true);
+      setPage(1);
+      searchColleges(true);
+    }
+  }, [preferences]);
+
   // Load recent searches once
   useEffect(() => {
     (async () => {
@@ -153,47 +179,80 @@ const HomeScreen = () => {
     })();
   }, []);
 
-  // Debounced suggestions for smart search (merge local + server)
+  // Debounced suggestions for smart search (merge local + server) with abort
   useEffect(() => {
     const handler = setTimeout(() => {
       const q = searchQuery.trim().toLowerCase();
       if (!q) {
-        setSuggestions(recentSearches.slice(0, 6).map((s) => ({ label: s })));
+        const base = recentSearches.slice(0, 6).map((s) => ({ label: s, type: 'recent' as const }));
+        const grouped: Suggestion[] = base.length ? [{ label: 'Recent', type: 'header' }, ...base] : [];
+        setSuggestions(grouped);
         setShowSuggestions(recentSearches.length > 0);
         return;
       }
-      const fromPopular = popularSearches.filter(t => t.toLowerCase().includes(q));
-      const fromRecent = recentSearches.filter(t => t.toLowerCase().includes(q));
-      const local = Array.from(new Set([...fromPopular, ...fromRecent])).map((s) => ({ label: s }));
+      const startsWith = (s: string) => s.toLowerCase().startsWith(q);
+      const contains = (s: string) => s.toLowerCase().includes(q);
+      const rankSort = (a: string, b: string) => {
+        const aw = startsWith(a) ? 0 : 1;
+        const bw = startsWith(b) ? 0 : 1;
+        if (aw !== bw) return aw - bw;
+        return a.localeCompare(b);
+      };
+      const popularLocals: Suggestion[] = popularSearches
+        .filter(contains)
+        .sort(rankSort)
+        .map((s) => ({ label: s, type: 'popular' }));
+      const recentLocals: Suggestion[] = recentSearches
+        .filter(contains)
+        .sort(rankSort)
+        .map((s) => ({ label: s, type: 'recent' }));
+      const local: Suggestion[] = [];
+      if (popularLocals.length) local.push({ label: 'Popular', type: 'header' }, ...popularLocals);
+      if (recentLocals.length) local.push({ label: 'Recent', type: 'header' }, ...recentLocals);
       // Server suggestions
       const fetchServer = async () => {
         try {
+          // Abort in-flight request
+          if (suggestAbortRef.current) suggestAbortRef.current.abort();
+          const controller = new AbortController();
+          suggestAbortRef.current = controller;
           const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?q=${encodeURIComponent(q)}&limit=5`;
-          const res = await fetch(url);
+          const res = await fetch(url, { signal: controller.signal });
           if (res.ok) {
             const data: any = await res.json();
-            const server: Suggestion[] = (data.colleges || []).map((c: any) => ({
-              label: c.name,
-              city: [c.city, c.state].filter(Boolean).join(', '),
-              logo_base64: c.logo_base64,
-            })).filter((s: Suggestion) => !!s.label);
-            const mergedMap = new Map<string, Suggestion>();
-            [...local, ...server].forEach((s) => { if (!mergedMap.has(s.label)) mergedMap.set(s.label, s); });
-            const merged = Array.from(mergedMap.values()).slice(0, 8);
-            setSuggestions(merged);
-            setShowSuggestions(merged.length > 0);
+            const serverItems: Suggestion[] = (data.colleges || [])
+              .map((c: any) => ({
+                label: c.name,
+                city: [c.city, c.state].filter(Boolean).join(', '),
+                logo_base64: c.logo_base64,
+                type: 'college' as const,
+              }))
+              .filter((s: Suggestion) => !!s.label);
+            const grouped: Suggestion[] = serverItems.length ? [{ label: 'Colleges', type: 'header' }, ...serverItems] : [];
+            // Add local groups beneath server results
+            const cta: Suggestion = { label: `Search for “${searchQuery.trim()}”`, type: 'cta' };
+            const finalList = [...grouped, ...local].slice(0, 12);
+            setSuggestions(finalList.concat(cta));
+            setShowSuggestions(finalList.length > 0);
           } else {
-            setSuggestions(local.slice(0, 8));
-            setShowSuggestions(local.length > 0);
+            const cta: Suggestion = { label: `Search for “${searchQuery.trim()}”`, type: 'cta' };
+            const fallback = local.slice(0, 10);
+            setSuggestions(fallback.concat(cta));
+            setShowSuggestions(fallback.length > 0);
           }
-        } catch {
-          setSuggestions(local.slice(0, 8));
-          setShowSuggestions(local.length > 0);
+        } catch (e: any) {
+          if (e?.name === 'AbortError') return; // ignore aborted
+          const cta: Suggestion = { label: `Search for “${searchQuery.trim()}”`, type: 'cta' };
+          const fallback = local.slice(0, 10);
+          setSuggestions(fallback.concat(cta));
+          setShowSuggestions(fallback.length > 0);
         }
       };
       if (q.length >= 2) fetchServer(); else {
-        setSuggestions(local.slice(0, 8));
-        setShowSuggestions(local.length > 0);
+        const cta: Suggestion = { label: `Search for “${searchQuery.trim()}”`, type: 'cta' };
+        const fallback = local.slice(0, 10);
+        setSuggestions(fallback.concat(cta));
+        setShowSuggestions(fallback.length > 0);
       }
     }, 250);
     return () => clearTimeout(handler);
@@ -305,16 +364,6 @@ const HomeScreen = () => {
 
       const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?${queryParams.toString()}`;
       console.log('Fetching from URL:', url);
-
-      // Test the URL first
-      try {
-        const testResponse = await fetch('http://localhost:8000/api/colleges/search?page=1');
-        console.log('Test response status:', testResponse.status);
-        const testData = await testResponse.json();
-        console.log('Test response data:', testData);
-      } catch (testError) {
-        console.error('Test fetch error:', testError);
-      }
 
       const response = await fetch(url);
       console.log('Response status:', response.status);
@@ -671,6 +720,8 @@ const HomeScreen = () => {
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
+              returnKeyType="search"
+              blurOnSubmit
               onFocus={() => setShowSuggestions(true)}
             />
             {searchQuery.length > 0 && (
@@ -696,24 +747,45 @@ const HomeScreen = () => {
                   <Text style={styles.suggestionTextMuted}>Start typing to search...</Text>
                 </View>
               ) : (
-                suggestions.map((s, i) => (
-                  <TouchableOpacity key={`${s.label}-${i}`} style={styles.suggestionItem}
-                    onPress={() => { setSearchQuery(s.label); setShowSuggestions(false); setTimeout(() => handleSearch(), 50); }}>
-                    {s.logo_base64 ? (
-                      <View style={styles.suggestionLogoWrapper}>
-                        <View style={styles.suggestionLogo}>
-                          {/* logo placeholder; RN Image avoided to keep patch minimal */}
-                        </View>
+                suggestions.map((s, i) => {
+                  if (s.type === 'header') {
+                    return (
+                      <View key={`hdr-${s.label}-${i}`} style={styles.suggestionHeader}>
+                        <Text style={styles.suggestionHeaderText}>{s.label}</Text>
                       </View>
-                    ) : (
-                      <Ionicons name="search" size={16} color="#666" />
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.suggestionText}>{s.label}</Text>
-                      {!!s.city && <Text style={styles.suggestionSubtext}>{s.city}</Text>}
-                    </View>
-                  </TouchableOpacity>
-                ))
+                    );
+                  }
+                  if (s.type === 'cta') {
+                    return (
+                      <TouchableOpacity key={`cta-${i}`} style={[styles.suggestionItem, styles.suggestionCta]}
+                        onPress={() => { setShowSuggestions(false); setTimeout(() => handleSearch(), 10); }}>
+                        <Ionicons name="return-down-forward" size={16} color="#1976D2" />
+                        <Text style={[styles.suggestionText, { color: '#1976D2', fontWeight: '700' }]}>{s.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  }
+                  const leftIcon = s.type === 'popular' ? 'flame-outline' : s.type === 'recent' ? 'time-outline' : 'search';
+                  return (
+                    <TouchableOpacity key={`${s.label}-${i}`} style={styles.suggestionItem}
+                      onPress={() => { setSearchQuery(s.label); setShowSuggestions(false); setTimeout(() => handleSearch(), 50); }}>
+                      {s.logo_base64 && s.type === 'college' ? (
+                        <View style={styles.suggestionLogoWrapper}>
+                          <Image
+                            source={{ uri: `data:image/png;base64,${s.logo_base64}` }}
+                            style={styles.suggestionLogoImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                      ) : (
+                        <Ionicons name={leftIcon as any} size={16} color="#666" />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.suggestionText}>{s.label}</Text>
+                        {!!s.city && <Text style={styles.suggestionSubtext}>{s.city}</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
               )}
               {recentSearches.length > 0 && (
                 <TouchableOpacity style={[styles.suggestionItem, { justifyContent: 'center' }]} onPress={() => { setRecentSearches([]); AsyncStorage.removeItem('recent_searches').catch(()=>{}); }}>
@@ -1249,6 +1321,21 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 13,
   },
+  suggestionHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F8F9FA',
+  },
+  suggestionHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  suggestionCta: {
+    backgroundColor: '#F0F7FF',
+  },
   suggestionSubtext: {
     color: '#8A8F98',
     fontSize: 12,
@@ -1273,6 +1360,28 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
+  },
+  clearFiltersChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+    gap: 6,
+  },
+  clearFiltersText: {
+    color: '#1976D2',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  suggestionLogoImage: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   // Skeleton styles
   skeletonTitle: {

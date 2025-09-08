@@ -7,9 +7,10 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { useCompare } from '../contexts/CompareContext';
+import { API } from '../utils/api';
 import CompactCollegeCard from './CompactCollegeCard';
 
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+// use API.url for device-friendly base URL
 
 interface College {
   id: string;
@@ -78,7 +79,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
     setError(null);
     
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/recommendations`, {
+      const response = await fetch(API.url('/api/recommendations'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
     setError(null);
     
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/recommendations/trending?limit=5`);
+      const response = await fetch(API.url('/api/recommendations/trending?limit=5'));
       
       if (response.ok) {
         const data = await response.json();
