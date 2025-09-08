@@ -26,6 +26,7 @@ import DeadlineTracker from '../../components/DeadlineTracker';
 import UpdatesFeed from '../../components/UpdatesFeed';
 import ApplicationProgress from '../../components/ApplicationProgress';
 import SmartQuickActions from '../../components/SmartQuickActions';
+// SideDrawer removed per request
 
 // Types
 interface College {
@@ -87,7 +88,13 @@ const HomeScreen = () => {
 
   // State for search and pagination
   const [searchQuery, setSearchQuery] = useState('');
+  type Suggestion = { label: string; city?: string; logo_base64?: string };
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortBy, setSortBy] = useState<'relevance'|'ranking'|'fees_low'|'fees_high'|'rating_high'>('relevance');
+  const [showSortModal, setShowSortModal] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -99,6 +106,7 @@ const HomeScreen = () => {
   ]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
+  // Drawer state removed
 
   // Mock favorites and compare hooks
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -134,6 +142,62 @@ const HomeScreen = () => {
   useEffect(() => {
     initializeData();
   }, []);
+
+  // Load recent searches once
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('recent_searches');
+        if (stored) setRecentSearches(JSON.parse(stored));
+      } catch {}
+    })();
+  }, []);
+
+  // Debounced suggestions for smart search (merge local + server)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) {
+        setSuggestions(recentSearches.slice(0, 6).map((s) => ({ label: s })));
+        setShowSuggestions(recentSearches.length > 0);
+        return;
+      }
+      const fromPopular = popularSearches.filter(t => t.toLowerCase().includes(q));
+      const fromRecent = recentSearches.filter(t => t.toLowerCase().includes(q));
+      const local = Array.from(new Set([...fromPopular, ...fromRecent])).map((s) => ({ label: s }));
+      // Server suggestions
+      const fetchServer = async () => {
+        try {
+          const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?q=${encodeURIComponent(q)}&limit=5`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data: any = await res.json();
+            const server: Suggestion[] = (data.colleges || []).map((c: any) => ({
+              label: c.name,
+              city: [c.city, c.state].filter(Boolean).join(', '),
+              logo_base64: c.logo_base64,
+            })).filter((s: Suggestion) => !!s.label);
+            const mergedMap = new Map<string, Suggestion>();
+            [...local, ...server].forEach((s) => { if (!mergedMap.has(s.label)) mergedMap.set(s.label, s); });
+            const merged = Array.from(mergedMap.values()).slice(0, 8);
+            setSuggestions(merged);
+            setShowSuggestions(merged.length > 0);
+          } else {
+            setSuggestions(local.slice(0, 8));
+            setShowSuggestions(local.length > 0);
+          }
+        } catch {
+          setSuggestions(local.slice(0, 8));
+          setShowSuggestions(local.length > 0);
+        }
+      };
+      if (q.length >= 2) fetchServer(); else {
+        setSuggestions(local.slice(0, 8));
+        setShowSuggestions(local.length > 0);
+      }
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [searchQuery, recentSearches]);
 
   useEffect(() => {
     // Configure foreground behavior
@@ -236,6 +300,9 @@ const HomeScreen = () => {
       queryParams.append('page', (reset ? 1 : page).toString());
       queryParams.append('limit', '10');
 
+      // Sorting
+      if (sortBy && sortBy !== 'relevance') queryParams.append('sort', sortBy);
+
       const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?${queryParams.toString()}`;
       console.log('Fetching from URL:', url);
 
@@ -306,6 +373,14 @@ const HomeScreen = () => {
     // Reset to first page when searching
     setPage(1);
     searchColleges(true);
+    // persist recent searches
+    const term = searchQuery.trim();
+    if (term.length > 0) {
+      const next = [term, ...recentSearches.filter(t => t.toLowerCase() !== term.toLowerCase())].slice(0, 8);
+      setRecentSearches(next);
+      AsyncStorage.setItem('recent_searches', JSON.stringify(next)).catch(() => {});
+    }
+    setShowSuggestions(false);
   };
 
   const handleQuickAction = (action: string) => {
@@ -411,10 +486,44 @@ const HomeScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#2196F3" />
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Loading colleges...</Text>
+        {/* Skeleton sticky header */}
+        <LinearGradient
+          colors={["#2196F3", "#1976D2", "#1565C0"]}
+          style={[styles.stickyHeader, { paddingTop: insets.top + 10 }]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.headerTop}>
+              <View>
+                <View style={styles.skeletonTitle} />
+                <View style={styles.skeletonSubtitle} />
+              </View>
+              <View style={styles.skeletonBell} />
+            </View>
+            <View style={styles.searchContainer}>
+              <View style={{ width: 18, height: 18, backgroundColor: '#EAECEE', borderRadius: 9, marginRight: 12 }} />
+              <View style={{ flex: 1, height: 36, backgroundColor: '#EAECEE', borderRadius: 8 }} />
+              <View style={{ width: 28, height: 28, backgroundColor: '#EAECEE', borderRadius: 6, marginLeft: 8 }} />
+            </View>
+          </View>
+        </LinearGradient>
+
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          {/* Skeleton cards */}
+          {[...Array(5)].map((_, idx) => (
+            <View key={idx} style={styles.skeletonCard}>
+              <View style={styles.skeletonLogo} />
+              <View style={{ flex: 1 }}>
+                <View style={styles.skeletonLineWide} />
+                <View style={styles.skeletonLine} />
+                <View style={styles.skeletonLine} />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -472,15 +581,36 @@ const HomeScreen = () => {
         />
         <View style={styles.sectionDivider} />
 
-        <RecommendationsSection
-          onViewAll={() => setSelectedCategory('All')}
-        />
+        {searchLoading ? (
+          <View style={styles.sectionCard}>
+            <View style={styles.skeletonLineWide} />
+            <View style={styles.skeletonLine} />
+            <View style={styles.skeletonLine} />
+          </View>
+        ) : (
+          <RecommendationsSection
+            onViewAll={() => setSelectedCategory('All')}
+          />
+        )}
         <View style={styles.sectionDivider} />
 
-        <FeaturedColleges
-          colleges={colleges.slice(0, 5)}
-          onViewAll={() => setSelectedCategory('All')}
-        />
+        {searchLoading ? (
+          <View style={styles.sectionCard}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              {[...Array(3)].map((_, idx) => (
+                <View key={idx} style={{ width: 120 }}>
+                  <View style={{ width: '100%', height: 70, backgroundColor: '#EAECEE', borderRadius: 10, marginBottom: 8 }} />
+                  <View style={styles.skeletonLine} />
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : (
+          <FeaturedColleges
+            colleges={colleges.slice(0, 5)}
+            onViewAll={() => setSelectedCategory('All')}
+          />
+        )}
         <View style={styles.sectionDivider} />
 
         <QuickActions
@@ -541,6 +671,7 @@ const HomeScreen = () => {
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
+              onFocus={() => setShowSuggestions(true)}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity 
@@ -553,7 +684,48 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
               <Ionicons name="options-outline" size={20} color="#2196F3" />
             </TouchableOpacity>
+            <TouchableOpacity style={styles.sortButton} onPress={() => setShowSortModal(true)}>
+              <Ionicons name="swap-vertical" size={20} color="#2196F3" />
+            </TouchableOpacity>
           </View>
+
+          {showSuggestions && (
+            <View style={styles.suggestionsContainer}>
+              {suggestions.length === 0 ? (
+                <View style={styles.suggestionItem}>
+                  <Text style={styles.suggestionTextMuted}>Start typing to search...</Text>
+                </View>
+              ) : (
+                suggestions.map((s, i) => (
+                  <TouchableOpacity key={`${s.label}-${i}`} style={styles.suggestionItem}
+                    onPress={() => { setSearchQuery(s.label); setShowSuggestions(false); setTimeout(() => handleSearch(), 50); }}>
+                    {s.logo_base64 ? (
+                      <View style={styles.suggestionLogoWrapper}>
+                        <View style={styles.suggestionLogo}>
+                          {/* logo placeholder; RN Image avoided to keep patch minimal */}
+                        </View>
+                      </View>
+                    ) : (
+                      <Ionicons name="search" size={16} color="#666" />
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.suggestionText}>{s.label}</Text>
+                      {!!s.city && <Text style={styles.suggestionSubtext}>{s.city}</Text>}
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+              {recentSearches.length > 0 && (
+                <TouchableOpacity style={[styles.suggestionItem, { justifyContent: 'center' }]} onPress={() => { setRecentSearches([]); AsyncStorage.removeItem('recent_searches').catch(()=>{}); }}>
+                  <Text style={[styles.suggestionTextMuted, { fontWeight: '700' }]}>Clear recent</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {showSuggestions && (
+            <TouchableOpacity activeOpacity={1} onPress={() => setShowSuggestions(false)} style={styles.suggestionsOverlay} />
+          )}
 
           {/* Enhanced Popular Searches */}
           <View style={styles.popularSearchesContainer}>
@@ -596,6 +768,7 @@ const HomeScreen = () => {
         ListFooterComponent={renderFooter}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
+        onScrollBeginDrag={() => setShowSuggestions(false)}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -618,6 +791,30 @@ const HomeScreen = () => {
       </TouchableOpacity>
 
       {renderFilterModal()}
+
+      {/* Sort modal */}
+      <Modal visible={showSortModal} transparent animationType="fade" onRequestClose={() => setShowSortModal(false)}>
+        <View style={styles.sortOverlay}>
+          <View style={styles.sortSheet}>
+            <Text style={styles.sortTitle}>Sort by</Text>
+            {([
+              { key: 'relevance', label: 'Relevance' },
+              { key: 'ranking', label: 'Ranking (best first)' },
+              { key: 'fees_low', label: 'Fees (low to high)' },
+              { key: 'fees_high', label: 'Fees (high to low)' },
+              { key: 'rating_high', label: 'Rating (high to low)' },
+            ] as const).map(opt => (
+              <TouchableOpacity key={opt.key} style={styles.sortItem} onPress={() => { setSortBy(opt.key); setShowSortModal(false); setPage(1); searchColleges(true); }}>
+                <Ionicons name={sortBy === opt.key ? 'radio-button-on' : 'radio-button-off'} size={18} color="#1976D2" />
+                <Text style={styles.sortItemText}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.sortCancel} onPress={() => setShowSortModal(false)}>
+              <Text style={styles.sortCancelText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -835,6 +1032,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
   },
+  sortButton: {
+    padding: 8,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginLeft: 8,
+  },
   // Enhanced Popular Searches
   popularSearchesContainer: {
     width: '100%',
@@ -951,6 +1154,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     padding: 8,
   },
+  // hamburgerButton removed
   notificationBadge: {
     position: 'absolute',
     top: 6,
@@ -979,6 +1183,146 @@ const styles = StyleSheet.create({
   },
   popularScrollView: {
     maxHeight: 40,
+  },
+  // Sort modal
+  sortOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  sortSheet: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  sortTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  sortItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 10,
+  },
+  sortItemText: {
+    color: '#111827',
+    fontSize: 14,
+  },
+  sortCancel: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  sortCancelText: {
+    color: '#1976D2',
+    fontWeight: '700',
+  },
+  // Smart search suggestions
+  suggestionsContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAECEE',
+    marginTop: -8,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F3F5',
+    gap: 8,
+  },
+  suggestionText: {
+    color: '#111827',
+    fontSize: 14,
+  },
+  suggestionTextMuted: {
+    color: '#6B7280',
+    fontSize: 13,
+  },
+  suggestionSubtext: {
+    color: '#8A8F98',
+    fontSize: 12,
+  },
+  suggestionLogoWrapper: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#EAECEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  suggestionLogo: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#CFD4DA',
+  },
+  suggestionsOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  // Skeleton styles
+  skeletonTitle: {
+    width: 180,
+    height: 20,
+    backgroundColor: '#EAECEE',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  skeletonSubtitle: {
+    width: 220,
+    height: 12,
+    backgroundColor: '#EAECEE',
+    borderRadius: 6,
+  },
+  skeletonBell: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#EAECEE',
+    borderRadius: 6,
+  },
+  skeletonCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#EAECEE',
+    gap: 12,
+  },
+  skeletonLogo: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#EAECEE',
+    borderRadius: 12,
+  },
+  skeletonLineWide: {
+    width: '70%',
+    height: 14,
+    backgroundColor: '#EAECEE',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  skeletonLine: {
+    width: '50%',
+    height: 12,
+    backgroundColor: '#EAECEE',
+    borderRadius: 6,
+    marginBottom: 8,
   },
 });
 
