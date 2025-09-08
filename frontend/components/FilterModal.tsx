@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   Dimensions,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Modal from 'react-native-modal';
@@ -43,6 +44,16 @@ const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState<Filters>({});
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+
+  const panelBg = isDark ? '#0F172A' : '#fff';
+  const textPrimary = isDark ? '#E5E7EB' : '#333';
+  const textSecondary = isDark ? '#AEB6C2' : '#666';
+  const border = isDark ? 'rgba(255,255,255,0.08)' : '#E0E0E0';
+  const divider = isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0';
+  const chipBg = isDark ? 'rgba(148,163,184,0.15)' : '#f5f5f5';
+  const chipActiveBg = '#2196F3';
 
   const universityTypes = ['Government', 'Private', 'Deemed'];
   const popularCourses = [
@@ -105,12 +116,12 @@ const FilterModal: React.FC<FilterModalProps> = ({
       animationOut="slideOutDown"
       backdropOpacity={0.5}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: panelBg }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Filter Colleges</Text>
+        <View style={[styles.header, { borderBottomColor: divider }]}>
+          <Text style={[styles.title, { color: textPrimary }]}>Filter Colleges</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#666" />
+            <Ionicons name="close" size={24} color={textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -122,40 +133,42 @@ const FilterModal: React.FC<FilterModalProps> = ({
         >
           {/* Quick Filters */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Filters</Text>
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>Quick Filters</Text>
             <View style={styles.chipContainer}>
-              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('universityType', 'Government')}>
-                <Text style={styles.chipText}>Government</Text>
+              <TouchableOpacity style={[styles.chip, { backgroundColor: chipBg }]} onPress={() => updateFilter('universityType', 'Government')}>
+                <Text style={[styles.chipText, { color: textSecondary }]}>Government</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('universityType', 'Private')}>
-                <Text style={styles.chipText}>Private</Text>
+              <TouchableOpacity style={[styles.chip, { backgroundColor: chipBg }]} onPress={() => updateFilter('universityType', 'Private')}>
+                <Text style={[styles.chipText, { color: textSecondary }]}>Private</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.chip} onPress={() => { updateFilter('rankingFrom', 1); updateFilter('rankingTo', 100); }}>
-                <Text style={styles.chipText}>Top 100</Text>
+              <TouchableOpacity style={[styles.chip, { backgroundColor: chipBg }]} onPress={() => { updateFilter('rankingFrom', 1); updateFilter('rankingTo', 100); }}>
+                <Text style={[styles.chipText, { color: textSecondary }]}>Top 100</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('maxFees', 100000)}>
-                <Text style={styles.chipText}>Fees ≤ ₹1L</Text>
+              <TouchableOpacity style={[styles.chip, { backgroundColor: chipBg }]} onPress={() => updateFilter('maxFees', 100000)}>
+                <Text style={[styles.chipText, { color: textSecondary }]}>Fees ≤ ₹1L</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.chip} onPress={() => updateFilter('city', 'Bangalore')}>
-                <Text style={styles.chipText}>Bangalore</Text>
+              <TouchableOpacity style={[styles.chip, { backgroundColor: chipBg }]} onPress={() => updateFilter('city', 'Bangalore')}>
+                <Text style={[styles.chipText, { color: textSecondary }]}>Bangalore</Text>
               </TouchableOpacity>
             </View>
           </View>
           {/* Fees Range */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Annual Fees (₹)</Text>
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>Annual Fees (₹)</Text>
             <View style={styles.rangeContainer}>
               <TextInput
-                style={styles.rangeInput}
+                style={[styles.rangeInput, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
                 placeholder="Min Fees"
+                placeholderTextColor={textSecondary}
                 value={localFilters.minFees?.toString() || ''}
                 onChangeText={(text) => updateFilter('minFees', text ? parseInt(text) : undefined)}
                 keyboardType="numeric"
               />
-              <Text style={styles.rangeSeparator}>to</Text>
+              <Text style={[styles.rangeSeparator, { color: textSecondary }]}>to</Text>
               <TextInput
-                style={styles.rangeInput}
+                style={[styles.rangeInput, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
                 placeholder="Max Fees"
+                placeholderTextColor={textSecondary}
                 value={localFilters.maxFees?.toString() || ''}
                 onChangeText={(text) => updateFilter('maxFees', text ? parseInt(text) : undefined)}
                 keyboardType="numeric"
@@ -165,19 +178,21 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Rating Range */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Star Rating</Text>
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>Star Rating</Text>
             <View style={styles.rangeContainer}>
               <TextInput
-                style={styles.rangeInput}
+                style={[styles.rangeInput, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
                 placeholder="Min Rating"
+                placeholderTextColor={textSecondary}
                 value={localFilters.minRating?.toString() || ''}
                 onChangeText={(text) => updateFilter('minRating', text ? parseFloat(text) : undefined)}
                 keyboardType="decimal-pad"
               />
-              <Text style={styles.rangeSeparator}>to</Text>
+              <Text style={[styles.rangeSeparator, { color: textSecondary }]}>to</Text>
               <TextInput
-                style={styles.rangeInput}
+                style={[styles.rangeInput, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
                 placeholder="Max Rating"
+                placeholderTextColor={textSecondary}
                 value={localFilters.maxRating?.toString() || ''}
                 onChangeText={(text) => updateFilter('maxRating', text ? parseFloat(text) : undefined)}
                 keyboardType="decimal-pad"
@@ -187,19 +202,21 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Ranking Range */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>College Ranking</Text>
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>College Ranking</Text>
             <View style={styles.rangeContainer}>
               <TextInput
-                style={styles.rangeInput}
+                style={[styles.rangeInput, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
                 placeholder="From Rank"
+                placeholderTextColor={textSecondary}
                 value={localFilters.rankingFrom?.toString() || ''}
                 onChangeText={(text) => updateFilter('rankingFrom', text ? parseInt(text) : undefined)}
                 keyboardType="numeric"
               />
-              <Text style={styles.rangeSeparator}>to</Text>
+              <Text style={[styles.rangeSeparator, { color: textSecondary }]}>to</Text>
               <TextInput
-                style={styles.rangeInput}
+                style={[styles.rangeInput, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
                 placeholder="To Rank"
+                placeholderTextColor={textSecondary}
                 value={localFilters.rankingTo?.toString() || ''}
                 onChangeText={(text) => updateFilter('rankingTo', text ? parseInt(text) : undefined)}
                 keyboardType="numeric"
@@ -235,10 +252,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Location */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>City</Text>
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>City</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
               placeholder="Enter city name"
+              placeholderTextColor={textSecondary}
               value={localFilters.city || ''}
               onChangeText={(text) => updateFilter('city', text || undefined)}
             />
@@ -248,7 +266,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   key={city}
                   style={[
                     styles.smallChip,
-                    localFilters.city === city && styles.chipActive
+                    { backgroundColor: chipBg },
+                    localFilters.city === city && { backgroundColor: chipActiveBg }
                   ]}
                   onPress={() => updateFilter('city', 
                     localFilters.city === city ? undefined : city
@@ -256,6 +275,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text style={[
                     styles.smallChipText,
+                    { color: textSecondary },
                     localFilters.city === city && styles.chipTextActive
                   ]}>
                     {city}
@@ -266,10 +286,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>State</Text>
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>State</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: border, color: textPrimary, backgroundColor: isDark ? '#111827' : '#fff' }]}
               placeholder="Enter state name"
+              placeholderTextColor={textSecondary}
               value={localFilters.state || ''}
               onChangeText={(text) => updateFilter('state', text || undefined)}
             />
@@ -279,7 +300,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   key={state}
                   style={[
                     styles.smallChip,
-                    localFilters.state === state && styles.chipActive
+                    { backgroundColor: chipBg },
+                    localFilters.state === state && { backgroundColor: chipActiveBg }
                   ]}
                   onPress={() => updateFilter('state', 
                     localFilters.state === state ? undefined : state
@@ -287,6 +309,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text style={[
                     styles.smallChipText,
+                    { color: textSecondary },
                     localFilters.state === state && styles.chipTextActive
                   ]}>
                     {state}
@@ -298,7 +321,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Courses */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
+            <Text style={[styles.sectionTitle, { color: textPrimary }] }>
               Courses {selectedCourses.length > 0 && `(${selectedCourses.length})`}
             </Text>
             <View style={styles.chipContainer}>
@@ -307,12 +330,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   key={course}
                   style={[
                     styles.smallChip,
-                    selectedCourses.includes(course) && styles.chipActive
+                    { backgroundColor: chipBg },
+                    selectedCourses.includes(course) && { backgroundColor: chipActiveBg }
                   ]}
                   onPress={() => toggleCourse(course)}
                 >
                   <Text style={[
                     styles.smallChipText,
+                    { color: textSecondary },
                     selectedCourses.includes(course) && styles.chipTextActive
                   ]}>
                     {course}
@@ -324,7 +349,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: divider }]}>
           <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
             <Text style={styles.clearButtonText}>Clear All</Text>
           </TouchableOpacity>

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
@@ -92,9 +93,20 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
     return college.courses_offered.slice(0, 2);
   };
 
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const cardBg = isDark ? '#0F172A' : '#fff';
+  const border = isDark ? 'rgba(255,255,255,0.06)' : '#EAECEE';
+  const primary = '#2196F3';
+  const textPrimary = isDark ? '#E5E7EB' : '#333';
+  const textSecondary = isDark ? '#AEB6C2' : '#666';
+  const chipBg = isDark ? 'rgba(37, 99, 235, 0.15)' : '#E3F2FD';
+  const tagBg = isDark ? 'rgba(148,163,184,0.15)' : '#f5f5f5';
+  const divider = isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0';
+
   return (
     <Animatable.View animation="fadeInUp" duration={600}>
-      <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
+      <TouchableOpacity style={[styles.card, { backgroundColor: cardBg, borderColor: border }]} activeOpacity={0.8} onPress={onPress}>
         {/* Header with Logo and Basic Info */}
         <View style={styles.cardHeader}>
           <View style={styles.logoContainer}>
@@ -105,16 +117,16 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
               />
             ) : (
               <View style={[styles.logo, styles.placeholderLogo]}>
-                <Ionicons name="school" size={28} color="#2196F3" />
+                <Ionicons name="school" size={28} color={primary} />
               </View>
             )}
           </View>
           
           <View style={styles.collegeInfo}>
-            <Text style={styles.collegeName} numberOfLines={2}>
+            <Text style={[styles.collegeName, { color: textPrimary }]} numberOfLines={2}>
               {college.name}
             </Text>
-            <Text style={styles.location}>
+            <Text style={[styles.location, { color: textSecondary }]}>
               {college.city}, {college.state}
             </Text>
             
@@ -122,10 +134,10 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
               <View style={styles.starsContainer}>
                 {renderStars(college.star_rating)}
               </View>
-              <Text style={styles.ratingText}>({college.star_rating})</Text>
+              <Text style={[styles.ratingText, { color: textSecondary }]}>({college.star_rating})</Text>
               {college.ranking && (
-                <View style={styles.rankingBadge}>
-                  <Text style={styles.rankingText}>#{college.ranking}</Text>
+                <View style={[styles.rankingBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FF9800' }]}>
+                  <Text style={[styles.rankingText, { color: isDark ? '#FFD27A' : '#fff' }]}>#{college.ranking}</Text>
                 </View>
               )}
             </View>
@@ -147,19 +159,19 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
         {/* Key Metrics */}
         <View style={styles.metricsRow}>
           <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Annual Fees</Text>
-            <Text style={styles.metricValue}>{formatFees(college.annual_fees)}</Text>
+            <Text style={[styles.metricLabel, { color: textSecondary }]}>Annual Fees</Text>
+            <Text style={[styles.metricValue, { color: textPrimary }]}>{formatFees(college.annual_fees)}</Text>
           </View>
           
           <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Avg. Package</Text>
+            <Text style={[styles.metricLabel, { color: textSecondary }]}>Avg. Package</Text>
             <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
               {formatPackage(college.average_package)}
             </Text>
           </View>
           
           <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Placement</Text>
+            <Text style={[styles.metricLabel, { color: textSecondary }]}>Placement</Text>
             <Text style={[styles.metricValue, { color: '#FF9800' }]}>
               {college.placement_percentage}%
             </Text>
@@ -169,12 +181,12 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
         {/* Course Tags */}
         <View style={styles.coursesRow}>
           {getTopCourses().map((course, index) => (
-            <View key={index} style={styles.courseTag}>
-              <Text style={styles.courseTagText}>{course}</Text>
+            <View key={index} style={[styles.courseTag, { backgroundColor: chipBg }]}>
+              <Text style={[styles.courseTagText, { color: primary }]}>{course}</Text>
             </View>
           ))}
           {college.courses_offered.length > 2 && (
-            <Text style={styles.moreCourses}>
+            <Text style={[styles.moreCourses, { color: textSecondary }]}>
               +{college.courses_offered.length - 2} more
             </Text>
           )}
@@ -188,13 +200,13 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
             </Text>
           </View>
           
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>Est. {college.established_year}</Text>
+          <View style={[styles.tag, { backgroundColor: tagBg }]}>
+            <Text style={[styles.tagText, { color: textSecondary }]}>Est. {college.established_year}</Text>
           </View>
           
           {college.total_students && (
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{formatNumber(college.total_students)} Students</Text>
+            <View style={[styles.tag, { backgroundColor: tagBg }]}>
+              <Text style={[styles.tagText, { color: textSecondary }]}>{formatNumber(college.total_students)} Students</Text>
             </View>
           )}
         </View>
@@ -228,15 +240,15 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
         </View>
 
         {/* Footer Actions */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: divider }]}>
           <TouchableOpacity 
-            style={[styles.compareButton, isInCompare && styles.compareButtonActive]}
+            style={[styles.compareButton, { backgroundColor: isInCompare ? primary : chipBg }]}
             onPress={onComparePress}
           >
             <Ionicons 
               name="analytics" 
               size={16} 
-              color={isInCompare ? "#fff" : "#2196F3"} 
+              color={isInCompare ? "#fff" : primary} 
             />
             <Text style={[
               styles.compareButtonText, 

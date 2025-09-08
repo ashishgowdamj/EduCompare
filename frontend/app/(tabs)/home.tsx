@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, RefreshControl, TouchableOpacity, SafeAreaView, FlatList, Dimensions, Modal, TextInput, Platform, Image, Animated, useColorScheme } from 'react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,6 +83,8 @@ interface Filters {
 }
 
 const HomeScreen = () => {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { preferences } = usePreferences();
@@ -561,7 +563,7 @@ const HomeScreen = () => {
     return (
       <View style={styles.activeChipsRow}>
         {chips.map((chip, idx) => (
-          <View key={`${chip.key}-${chip.label}-${idx}`} style={styles.filterChip}>
+          <View key={`${chip.key}-${chip.label}-${idx}`} style={[styles.filterChip, isDark && { backgroundColor: 'rgba(37,99,235,0.15)', borderColor: 'rgba(37,99,235,0.35)' }]}>
             <Text style={styles.filterChipText}>{chip.label}</Text>
             <TouchableOpacity onPress={() => {
               if (chip.key === 'fees') {
@@ -622,7 +624,7 @@ const HomeScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, isDark && { backgroundColor: '#0B1320' }]}>
         <StatusBar barStyle="light-content" backgroundColor="#2196F3" />
         {/* Skeleton sticky header */}
         <LinearGradient
@@ -669,37 +671,6 @@ const HomeScreen = () => {
 
   const renderListHeader = () => (
     <View>
-      {/* Enhanced Stats Section */}
-      <View style={styles.statsSection}>
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Ionicons name="school" size={24} color="#2196F3" />
-          </View>
-          <View style={styles.statContent}>
-            <Text style={styles.statNumber}>500+</Text>
-            <Text style={styles.statLabel}>Colleges</Text>
-          </View>
-        </View>
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Ionicons name="location" size={24} color="#4CAF50" />
-          </View>
-          <View style={styles.statContent}>
-            <Text style={styles.statNumber}>50+</Text>
-            <Text style={styles.statLabel}>Cities</Text>
-          </View>
-        </View>
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Ionicons name="library" size={24} color="#FF9800" />
-          </View>
-          <View style={styles.statContent}>
-            <Text style={styles.statNumber}>100+</Text>
-            <Text style={styles.statLabel}>Courses</Text>
-          </View>
-        </View>
-      </View>
-
       <View style={styles.content}>
         {/* Personalized Dashboard Components */}
         <SmartQuickActions />
@@ -773,7 +744,7 @@ const HomeScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: '#0B1320' }]}>
       <StatusBar barStyle="light-content" backgroundColor="#2196F3" translucent />
       
       {/* Enhanced Fixed Header */}
@@ -830,7 +801,7 @@ const HomeScreen = () => {
           </View>
 
           {showSuggestions && (
-            <View style={styles.suggestionsContainer}>
+            <View style={[styles.suggestionsContainer, isDark && { backgroundColor: '#0F172A', borderColor: 'rgba(255,255,255,0.08)' }]}>
               {suggestions.length === 0 ? (
                 <View style={styles.suggestionItem}>
                   <Text style={styles.suggestionTextMuted}>Start typing to search...</Text>
@@ -866,11 +837,11 @@ const HomeScreen = () => {
                           />
                         </View>
                       ) : (
-                        <Ionicons name={leftIcon as any} size={16} color="#666" />
+                        <Ionicons name={leftIcon as any} size={16} color={isDark ? '#AEB6C2' : '#666'} />
                       )}
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.suggestionText}>{s.label}</Text>
-                        {!!s.city && <Text style={styles.suggestionSubtext}>{s.city}</Text>}
+                        <Text style={[styles.suggestionText, isDark && { color: '#E5E7EB' }]}>{s.label}</Text>
+                        {!!s.city && <Text style={[styles.suggestionSubtext, isDark && { color: '#93A3B8' }]}>{s.city}</Text>}
                       </View>
                     </TouchableOpacity>
                   );
@@ -878,7 +849,7 @@ const HomeScreen = () => {
               )}
               {recentSearches.length > 0 && (
                 <TouchableOpacity style={[styles.suggestionItem, { justifyContent: 'center' }]} onPress={() => { setRecentSearches([]); AsyncStorage.removeItem('recent_searches').catch(()=>{}); }}>
-                  <Text style={[styles.suggestionTextMuted, { fontWeight: '700' }]}>Clear recent</Text>
+                  <Text style={[styles.suggestionTextMuted, { fontWeight: '700' }, isDark && { color: '#93A3B8' }]}>Clear recent</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -930,13 +901,15 @@ const HomeScreen = () => {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         onScrollBeginDrag={() => setShowSuggestions(false)}
+        showsVerticalScrollIndicator={false}
+        scrollIndicatorInsets={{ bottom: insets.bottom + 90 }}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
           />
         }
-        contentContainerStyle={styles.flatListContent}
+        contentContainerStyle={[styles.flatListContent, { paddingBottom: insets.bottom + 140 }]}
       />
 
       <TouchableOpacity
@@ -956,8 +929,8 @@ const HomeScreen = () => {
       {/* Sort modal */}
       <Modal visible={showSortModal} transparent animationType="fade" onRequestClose={() => setShowSortModal(false)}>
         <View style={styles.sortOverlay}>
-          <View style={styles.sortSheet}>
-            <Text style={styles.sortTitle}>Sort by</Text>
+          <View style={[styles.sortSheet, isDark && { backgroundColor: '#0F172A' }]}>
+            <Text style={[styles.sortTitle, isDark && { color: '#E5E7EB' }]}>Sort by</Text>
             {([
               { key: 'relevance', label: 'Relevance' },
               { key: 'ranking', label: 'Ranking (best first)' },
@@ -967,7 +940,7 @@ const HomeScreen = () => {
             ] as const).map(opt => (
               <TouchableOpacity key={opt.key} style={styles.sortItem} onPress={() => { setSortBy(opt.key); setShowSortModal(false); setPage(1); searchColleges(true); }}>
                 <Ionicons name={sortBy === opt.key ? 'radio-button-on' : 'radio-button-off'} size={18} color="#1976D2" />
-                <Text style={styles.sortItemText}>{opt.label}</Text>
+                <Text style={[styles.sortItemText, isDark && { color: '#E5E7EB' }]}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.sortCancel} onPress={() => setShowSortModal(false)}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { H3, Body, Caption } from './Typography';
 import { useRouter } from 'expo-router';
@@ -57,6 +57,8 @@ interface RecommendationsSectionProps {
 const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewAll }) => {
   const router = useRouter();
   const { preferences, browsingHistory, isPreferencesComplete, addToBrowsingHistory } = usePreferences();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const { user } = useAuth();
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
@@ -201,13 +203,13 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <H3 style={styles.sectionTitle}>{sectionTitle}</H3>
-          <Caption style={styles.sectionSubtitle}>{sectionSubtitle}</Caption>
+          <H3 style={[styles.sectionTitle, isDark && { color: '#E5E7EB' }]}>{sectionTitle}</H3>
+          <Caption style={[styles.sectionSubtitle, isDark && { color: '#93A3B8' }]}>{sectionSubtitle}</Caption>
         </View>
         
         {recommendations.length > 0 && (
           <TouchableOpacity onPress={onViewAll}>
-            <Body style={styles.seeAll}>See All</Body>
+            <Body style={[styles.seeAll, isDark && { color: '#7AB8FF' }]}>See All</Body>
           </TouchableOpacity>
         )}
       </View>
@@ -215,12 +217,12 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
-          <Caption style={styles.loadingText}>Finding perfect colleges for you...</Caption>
+          <Caption style={[styles.loadingText, isDark && { color: '#93A3B8' }]}>Finding perfect colleges for you...</Caption>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={24} color="#f44336" />
-          <Caption style={styles.errorText}>{error}</Caption>
+          <Caption style={[styles.errorText, isDark && { color: '#EF9A9A' }]}>{error}</Caption>
           <TouchableOpacity onPress={fetchTrendingColleges} style={styles.retryButton}>
             <Caption style={styles.retryText}>Retry</Caption>
           </TouchableOpacity>
@@ -241,7 +243,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
         <View style={styles.preferencesPrompt}>
           <View style={styles.promptContent}>
             <Ionicons name="settings-outline" size={20} color="#2196F3" />
-            <Body style={styles.promptText}>
+            <Body style={[styles.promptText, isDark && { color: '#7AB8FF' }]}>
               Want better recommendations? Set up your preferences!
             </Body>
           </View>

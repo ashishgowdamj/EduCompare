@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Platform, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { H3, Body, Caption } from './Typography';
 import { theme } from '../constants/theme';
@@ -26,6 +26,8 @@ interface FeaturedCollegesProps {
 
 const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll }) => {
   const router = useRouter();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -47,9 +49,9 @@ const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <H3 style={styles.sectionTitle}>Featured Colleges</H3>
+        <H3 style={[styles.sectionTitle, isDark && { color: '#E5E7EB' }]}>Featured Colleges</H3>
         <TouchableOpacity onPress={onViewAll}>
-          <Body style={styles.seeAll}>See All</Body>
+          <Body style={[styles.seeAll, isDark && { color: '#7AB8FF' }]}>See All</Body>
         </TouchableOpacity>
       </View>
       
@@ -64,7 +66,7 @@ const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll
             style={styles.card}
             onPress={() => router.push(`/college/${college.id}`)}
           >
-            <View style={styles.cardImageContainer}>
+            <View style={[styles.cardImageContainer, isDark && { backgroundColor: '#111827' }]}>
               {college.logo_base64 ? (
                 <Image 
                   source={{ uri: `data:image/png;base64,${college.logo_base64}` }} 
@@ -80,7 +82,7 @@ const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll
                 colors={['transparent', 'rgba(0,0,0,0.7)']}
                 style={styles.gradient}
               />
-              <View style={styles.ratingContainer}>
+              <View style={[styles.ratingContainer, isDark && { backgroundColor: 'rgba(255,255,255,0.85)' }]}>
                 <View style={styles.starsContainer}>
                   {renderStars(college.star_rating)}
                 </View>
@@ -89,18 +91,18 @@ const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll
                 </Caption>
               </View>
               {college.ranking && (
-                <View style={styles.rankingBadge}>
-                  <Caption style={styles.rankingText}>#{college.ranking}</Caption>
+                <View style={[styles.rankingBadge, isDark && { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                  <Caption style={[styles.rankingText, isDark && { color: '#fff' }]}>#{college.ranking}</Caption>
                 </View>
               )}
             </View>
             <View style={styles.cardContent}>
-              <H3 numberOfLines={1} style={styles.collegeName}>
+              <H3 numberOfLines={1} style={[styles.collegeName, isDark && { color: '#E5E7EB' }]}>
                 {college.name}
               </H3>
               <View style={styles.locationContainer}>
                 <Ionicons name="location" size={14} color={theme.colors.icon.default} />
-                <Body style={styles.locationText}>
+                <Body style={[styles.locationText, isDark && { color: '#AEB6C2' }]}>
                   {college.city}, {college.state}
                 </Body>
               </View>

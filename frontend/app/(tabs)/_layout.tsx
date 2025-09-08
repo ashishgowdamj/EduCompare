@@ -8,17 +8,13 @@ const isIOS = Platform.OS === 'ios';
 
 export default function TabLayout() {
   const { compareList } = useCompare();
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#2196F3',
         tabBarInactiveTintColor: '#999',
-        tabBarStyle: [
-          styles.tabBar,
-          isIOS && styles.iosTabBar,
-        ],
+        tabBarStyle: [styles.tabBar, isIOS && styles.iosTabBar],
         tabBarItemStyle: styles.tabBarItem,
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarIconStyle: styles.tabBarIcon,

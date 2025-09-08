@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text as RNText, TextProps as RNTextProps, StyleSheet } from 'react-native';
+import { Text as RNText, TextProps as RNTextProps, StyleSheet, useColorScheme } from 'react-native';
 import typography from '../constants/typography';
 
 type TextVariant = keyof typeof typography;
@@ -16,9 +16,11 @@ export const Text = ({
   ...props 
 }: TextProps) => {
   const textStyle = typography[variant];
+  const scheme = useColorScheme();
+  const defaultColor = scheme === 'dark' ? '#E5E7EB' : '#111827';
   
   return (
-    <RNText style={[textStyle, style]} {...props}>
+    <RNText style={[{ color: defaultColor }, textStyle, style]} {...props}>
       {children}
     </RNText>
   );

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
@@ -172,17 +173,20 @@ const DeadlineTracker: React.FC = () => {
     .filter(deadline => !deadline.isCompleted && getDaysUntilDeadline(deadline.date) >= 0)
     .slice(0, 5);
 
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+
   if (upcomingDeadlines.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <Ionicons name="calendar" size={20} color="#2196F3" />
-          <Text style={styles.title}>Upcoming Deadlines</Text>
+          <Text style={[styles.title, isDark && { color: '#E5E7EB' }]}>Upcoming Deadlines</Text>
         </View>
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyText}>No upcoming deadlines</Text>
-          <Text style={styles.emptySubtext}>Add colleges to favorites to track important dates</Text>
+          <Ionicons name="calendar-outline" size={48} color={isDark ? '#5B6472' : '#ccc'} />
+          <Text style={[styles.emptyText, isDark && { color: '#AEB6C2' }]}>No upcoming deadlines</Text>
+          <Text style={[styles.emptySubtext, isDark && { color: '#6B7280' }]}>Add colleges to favorites to track important dates</Text>
         </View>
       </View>
     );
@@ -192,7 +196,7 @@ const DeadlineTracker: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="calendar" size={20} color="#2196F3" />
-        <Text style={styles.title}>Upcoming Deadlines</Text>
+        <Text style={[styles.title, isDark && { color: '#E5E7EB' }]}>Upcoming Deadlines</Text>
         <TouchableOpacity style={styles.viewAllButton}>
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>
@@ -203,7 +207,7 @@ const DeadlineTracker: React.FC = () => {
           const daysUntil = getDaysUntilDeadline(deadline.date);
           
           return (
-            <View key={deadline.id} style={[styles.deadlineCard, getUrgencyStyle(daysUntil)]}>
+            <View key={deadline.id} style={[styles.deadlineCard, getUrgencyStyle(daysUntil), isDark && { backgroundColor: '#0F172A' }]}>
               <View style={[styles.accentBar, { backgroundColor: getPriorityColor(deadline.priority) }]} />
               <View style={styles.deadlineHeader}>
                 <View style={styles.deadlineIconContainer}>
@@ -221,11 +225,11 @@ const DeadlineTracker: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.deadlineTitle} numberOfLines={2}>
+              <Text style={[styles.deadlineTitle, isDark && { color: '#E5E7EB' }]} numberOfLines={2}>
                 {deadline.title}
               </Text>
               
-              <Text style={styles.collegeName} numberOfLines={1}>
+              <Text style={[styles.collegeName, isDark && { color: '#AEB6C2' }]} numberOfLines={1}>
                 {deadline.collegeName}
               </Text>
 
@@ -233,7 +237,7 @@ const DeadlineTracker: React.FC = () => {
                 <Text style={styles.daysUntil}>
                   {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
                 </Text>
-                <Text style={styles.date}>
+                <Text style={[styles.date, isDark && { color: '#93A3B8' }]}>
                   {deadline.date.toLocaleDateString('en-US', { 
                     month: 'short', 
                     day: 'numeric' 
@@ -242,7 +246,7 @@ const DeadlineTracker: React.FC = () => {
               </View>
 
               {deadline.description && (
-                <Text style={styles.description} numberOfLines={2}>
+                <Text style={[styles.description, isDark && { color: '#93A3B8' }]} numberOfLines={2}>
                   {deadline.description}
                 </Text>
               )}

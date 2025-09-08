@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { FavoritesProvider } from '../contexts/FavoritesContext';
@@ -8,7 +8,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, Text, LogBox } from 'react-native';
+import { View, Text, LogBox, useColorScheme, TextInput } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -27,6 +28,22 @@ function FontWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (fontsLoaded) {
+      // Set default fonts across the app
+      // Note: defaultProps may be undefined in prod bundles on some RN versions
+      // so we defensively set them if available.
+      // This keeps typography consistent without wrapping every Text/TextInput.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const RNText: any = Text as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const RNTextInput: any = TextInput as any;
+      if (!RNText.defaultProps) RNText.defaultProps = {};
+      if (!RNText.defaultProps.style) RNText.defaultProps.style = {};
+      RNText.defaultProps.style = [RNText.defaultProps.style, { fontFamily: 'SpaceGrotesk-Regular' }];
+
+      if (!RNTextInput.defaultProps) RNTextInput.defaultProps = {};
+      if (!RNTextInput.defaultProps.style) RNTextInput.defaultProps.style = {};
+      RNTextInput.defaultProps.style = [RNTextInput.defaultProps.style, { fontFamily: 'SpaceGrotesk-Regular' }];
+
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
@@ -39,6 +56,8 @@ function FontWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   return (
     <FontWrapper>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -47,12 +66,13 @@ export default function RootLayout() {
           <PreferencesProvider>
             <FavoritesProvider>
               <CompareProvider>
-              <Text style={{ display: 'none' }}>.</Text> {/* Force font loading */}
+              <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={isDark ? '#0B1320' : '#FFFFFF'} />
+              <Text style={{ display: 'none' }}>.</Text>
               <Stack 
                 screenOptions={{ 
                   headerShown: false,
                   contentStyle: { 
-                    backgroundColor: '#fff',
+                    backgroundColor: isDark ? '#0B1320' : '#FFFFFF',
                     fontFamily: 'SpaceGrotesk-Regular' 
                   } as any
                 }}
