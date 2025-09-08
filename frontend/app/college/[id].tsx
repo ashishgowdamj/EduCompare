@@ -245,6 +245,99 @@ export default function CollegeDetails() {
     </View>
   );
 
+  const renderCoursesFees = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Popular Courses</Text>
+        <View style={styles.coursesGrid}>
+          {college?.courses_offered?.slice(0, 8).map((course, i) => (
+            <View key={i} style={styles.courseChip}>
+              <Text style={styles.courseText}>{course}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Fees Overview</Text>
+        <View style={styles.feeTable}>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Annual Fees</Text>
+            <Text style={styles.feeValue}>{formatFees(college?.annual_fees || 0)}</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Hostel (est.)</Text>
+            <Text style={styles.feeValue}>Varies</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderPlacements = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Key Placement Stats</Text>
+        <View style={styles.placementStats}>
+          <View style={styles.placementItem}>
+            <Text style={styles.placementLabel}>Placement Rate</Text>
+            <Text style={styles.placementValue}>{college?.placement_percentage}%</Text>
+          </View>
+          <View style={styles.placementItem}>
+            <Text style={styles.placementLabel}>Average Package</Text>
+            <Text style={styles.placementValue}>{formatPackage(college?.average_package || 0)}</Text>
+          </View>
+          <View style={styles.placementItem}>
+            <Text style={styles.placementLabel}>Highest Package</Text>
+            <Text style={styles.placementValue}>{formatPackage(college?.highest_package || 0)}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Top Recruiters</Text>
+        <Text style={styles.description}>Data coming soon</Text>
+      </View>
+    </View>
+  );
+
+  const renderReviews = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Student Reviews</Text>
+        <View style={styles.emptyCard}>
+          <Ionicons name="chatbubbles-outline" size={28} color="#9CA3AF" />
+          <Text style={styles.emptyCardTitle}>No reviews yet</Text>
+          <Text style={styles.emptyCardSub}>Be the first to write a review for this college.</Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => { /* TODO: navigate to review composer */ }}>
+            <Text style={styles.primaryBtnText}>Write a Review</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderGallery = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Gallery</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
+          {college?.images_base64?.length ? (
+            college.images_base64.map((img, idx) => (
+              <Image key={idx} source={{ uri: `data:image/jpeg;base64,${img}` }} style={styles.galleryImage} />
+            ))
+          ) : (
+            <View style={styles.emptyCard}>
+              <Ionicons name="images-outline" size={28} color="#9CA3AF" />
+              <Text style={styles.emptyCardTitle}>No images available</Text>
+              <Text style={styles.emptyCardSub}>We’ll add campus photos soon.</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </View>
+  );
+
   // Quick action handlers
   const handleCall = () => {
     if (!college?.contact_phone) return;
@@ -467,8 +560,12 @@ export default function CollegeDetails() {
 
   const tabs = [
     { id: 'overview', title: 'Overview', icon: 'information-circle' },
+    { id: 'courses', title: 'Courses & Fees', icon: 'book' },
+    { id: 'placements', title: 'Placements', icon: 'trending-up' },
     { id: 'facilities', title: 'Facilities', icon: 'business' },
     { id: 'admissions', title: 'Admissions', icon: 'school' },
+    { id: 'reviews', title: 'Reviews', icon: 'chatbubbles' },
+    { id: 'gallery', title: 'Gallery', icon: 'images' },
     { id: 'contact', title: 'Contact', icon: 'call' },
   ];
 
@@ -556,8 +653,12 @@ export default function CollegeDetails() {
           style={styles.tabContentContainer}
         >
           {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'courses' && renderCoursesFees()}
+          {activeTab === 'placements' && renderPlacements()}
           {activeTab === 'facilities' && renderFacilities()}
           {activeTab === 'admissions' && renderAdmissions()}
+          {activeTab === 'reviews' && renderReviews()}
+          {activeTab === 'gallery' && renderGallery()}
           {activeTab === 'contact' && renderContact()}
         </Animatable.View>
       </ScrollView>
@@ -904,6 +1005,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  // Courses & Fees
+  feeTable: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  feeLabel: { color: '#666', fontSize: 14 },
+  feeValue: { color: '#111827', fontSize: 14, fontWeight: '600' },
+  // Gallery & Empty states
+  galleryRow: { paddingVertical: 8 },
+  galleryImage: { width: 220, height: 140, borderRadius: 12, marginRight: 12, backgroundColor: '#f0f0f0' },
+  emptyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 16,
+    alignItems: 'center',
+  },
+  emptyCardTitle: { marginTop: 8, fontWeight: '700', color: '#111827' },
+  emptyCardSub: { color: '#6B7280', marginTop: 4, textAlign: 'center' },
+  primaryBtn: { marginTop: 12, backgroundColor: '#2196F3', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10 },
+  primaryBtnText: { color: '#fff', fontWeight: '700' },
   contactInfo: {
     marginLeft: 16,
     flex: 1,

@@ -369,6 +369,12 @@ const HomeScreen = () => {
       if (activeFilters.rankingFrom) queryParams.append('ranking_from', activeFilters.rankingFrom.toString());
       if (activeFilters.rankingTo) queryParams.append('ranking_to', activeFilters.rankingTo.toString());
       if (activeFilters.courses?.length) queryParams.append('courses', activeFilters.courses.join(','));
+      if (activeFilters.accreditation?.length) queryParams.append('accreditation', activeFilters.accreditation.join(','));
+      (['hostel','wifi','library','sports','canteen','medical'] as const).forEach(k => {
+        if ((activeFilters as any)[k]) queryParams.append(k, 'true');
+      });
+      if (activeFilters.minPlacement != null) queryParams.append('min_placement', String(activeFilters.minPlacement));
+      if (activeFilters.minAvgPackage != null) queryParams.append('min_avg_package', String(activeFilters.minAvgPackage));
 
       queryParams.append('page', (reset ? 1 : page).toString());
       queryParams.append('limit', '10');
@@ -556,6 +562,14 @@ const HomeScreen = () => {
     if (Array.isArray(activeFilters.courses) && activeFilters.courses.length) {
       activeFilters.courses.forEach((course: string) => chips.push({ key: 'courses', label: course, value: course }));
     }
+    if (Array.isArray(activeFilters.accreditation) && activeFilters.accreditation.length) {
+      activeFilters.accreditation.forEach((acc: string) => chips.push({ key: 'accreditation', label: acc, value: acc }));
+    }
+    (['hostel','wifi','library','sports','canteen','medical'] as const).forEach((k) => {
+      if ((activeFilters as any)[k]) chips.push({ key: k, label: k.charAt(0).toUpperCase() + k.slice(1) });
+    });
+    if (activeFilters.minPlacement) chips.push({ key: 'minPlacement', label: `Placement ≥ ${activeFilters.minPlacement}%` });
+    if (activeFilters.minAvgPackage) chips.push({ key: 'minAvgPackage', label: `Avg ≥ ₹${activeFilters.minAvgPackage}` });
 
     if (chips.length === 0) return null;
 
@@ -573,6 +587,13 @@ const HomeScreen = () => {
                 removeFilter('rankingFrom'); removeFilter('rankingTo');
               } else if (chip.key === 'courses') {
                 removeFilter('courses', chip.value);
+              } else if (chip.key === 'accreditation') {
+                const next = { ...(activeFilters as any) };
+                next.accreditation = (next.accreditation || []).filter((a: string) => a !== chip.value);
+                if (!next.accreditation.length) delete next.accreditation;
+                setActiveFilters(next);
+                setPage(1);
+                searchColleges(true);
               } else {
                 removeFilter(chip.key);
               }

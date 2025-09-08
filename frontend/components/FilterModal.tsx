@@ -24,6 +24,15 @@ interface Filters {
   courses?: string[];
   rankingFrom?: number;
   rankingTo?: number;
+  accreditation?: string[];
+  hostel?: boolean;
+  wifi?: boolean;
+  library?: boolean;
+  sports?: boolean;
+  canteen?: boolean;
+  medical?: boolean;
+  minPlacement?: number;
+  minAvgPackage?: number;
 }
 
 interface FilterModalProps {
@@ -43,6 +52,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState<Filters>({});
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [selectedAccreditations, setSelectedAccreditations] = useState<string[]>([]);
   const isDark = false;
 
   const panelBg = isDark ? '#0F172A' : '#fff';
@@ -70,16 +80,21 @@ const FilterModal: React.FC<FilterModalProps> = ({
     'Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Telangana',
     'Uttar Pradesh', 'West Bengal', 'Gujarat', 'Rajasthan', 'Haryana'
   ];
+  const commonAccreditations = ['NAAC A++', 'NAAC A+', 'NAAC A', 'NBA', 'AICTE'];
 
   useEffect(() => {
     setLocalFilters(filters);
     setSelectedCourses(filters.courses || []);
+    setSelectedAccreditations(filters.accreditation || []);
   }, [filters]);
 
   const handleApply = () => {
     const finalFilters = { ...localFilters };
     if (selectedCourses.length > 0) {
       finalFilters.courses = selectedCourses;
+    }
+    if (selectedAccreditations.length > 0) {
+      finalFilters.accreditation = selectedAccreditations;
     }
     onApply(finalFilters);
   };
@@ -96,6 +111,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
         ? prev.filter(c => c !== course)
         : [...prev, course]
     );
+  };
+
+  const toggleAccreditation = (acc: string) => {
+    setSelectedAccreditations(prev => prev.includes(acc) ? prev.filter(a => a !== acc) : [...prev, acc]);
   };
 
   const updateFilter = (key: keyof Filters, value: any) => {
@@ -171,9 +190,73 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 onChangeText={(text) => updateFilter('maxFees', text ? parseInt(text) : undefined)}
                 keyboardType="numeric"
               />
-            </View>
           </View>
+        </View>
 
+        {/* Facilities */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Facilities</Text>
+          <View style={styles.chipContainer}>
+            {([
+              ['hostel', 'Hostel'],
+              ['wifi', 'WiFi'],
+              ['library', 'Library'],
+              ['sports', 'Sports'],
+              ['canteen', 'Canteen'],
+              ['medical', 'Medical'],
+            ] as const).map(([key, label]) => (
+              <TouchableOpacity
+                key={key}
+                style={[styles.smallChip, (localFilters as any)[key] && styles.chipActive]}
+                onPress={() => updateFilter(key as keyof Filters, !(localFilters as any)[key])}
+              >
+                <Text style={[styles.smallChipText, (localFilters as any)[key] && styles.chipTextActive]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Accreditation */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Accreditation</Text>
+          <View style={styles.chipContainer}>
+            {commonAccreditations.map((acc) => (
+              <TouchableOpacity
+                key={acc}
+                style={[styles.smallChip, selectedAccreditations.includes(acc) && styles.chipActive]}
+                onPress={() => toggleAccreditation(acc)}
+              >
+                <Text style={[styles.smallChipText, selectedAccreditations.includes(acc) && styles.chipTextActive]}>
+                  {acc}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Minimum Outcomes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Minimum Outcomes</Text>
+          <View style={styles.rangeContainer}>
+            <TextInput
+              style={styles.rangeInput}
+              placeholder="Min Placement %"
+              value={localFilters.minPlacement?.toString() || ''}
+              onChangeText={(text) => updateFilter('minPlacement', text ? parseFloat(text) : undefined)}
+              keyboardType="decimal-pad"
+            />
+            <Text style={styles.rangeSeparator}>and</Text>
+            <TextInput
+              style={styles.rangeInput}
+              placeholder="Min Avg Package (₹)"
+              value={localFilters.minAvgPackage?.toString() || ''}
+              onChangeText={(text) => updateFilter('minAvgPackage', text ? parseInt(text) : undefined)}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
           {/* Rating Range */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: textPrimary }]}>Star Rating</Text>

@@ -249,6 +249,9 @@ async def create_indexes():
         await db.colleges.create_index([("star_rating", -1)])
         await db.colleges.create_index([("ranking", 1)])
         await db.colleges.create_index([("courses_offered", 1)])  # multikey index
+        await db.colleges.create_index([("accreditation", 1)])     # multikey index
+        await db.colleges.create_index([("placement_percentage", -1)])
+        await db.colleges.create_index([("average_package", -1)])
     except Exception as e:
         logging.getLogger(__name__).warning(f"Index creation failed or already exists: {e}")
 
@@ -273,6 +276,15 @@ async def search_colleges(
     max_rating: Optional[float] = Query(None, description="Maximum star rating"),
     ranking_from: Optional[int] = Query(None, description="Ranking from"),
     ranking_to: Optional[int] = Query(None, description="Ranking to"),
+    accreditation: Optional[str] = Query(None, description="Comma-separated accreditations (e.g., NAAC A++,NBA)"),
+    hostel: Optional[bool] = Query(None, description="Require hostel facilities"),
+    wifi: Optional[bool] = Query(None, description="Require WiFi"),
+    library: Optional[bool] = Query(None, description="Require library"),
+    sports: Optional[bool] = Query(None, description="Require sports"),
+    canteen: Optional[bool] = Query(None, description="Require canteen"),
+    medical: Optional[bool] = Query(None, description="Require medical facilities"),
+    min_placement: Optional[float] = Query(None, description="Minimum placement percentage"),
+    min_avg_package: Optional[int] = Query(None, description="Minimum average package (₹)"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort: Optional[str] = Query("relevance", description="Sort key: relevance|ranking|fees_low|fees_high|rating_high"),
@@ -330,6 +342,31 @@ async def search_colleges(
     if courses:
         course_list = [course.strip() for course in courses.split(",")]
         filter_query["courses_offered"] = {"$in": [re.compile(course, re.IGNORECASE) for course in course_list]}
+
+    # Accreditation filter (any match)
+    if accreditation:
+        acc_list = [acc.strip() for acc in accreditation.split(",") if acc.strip()]
+        if acc_list:
+            filter_query["accreditation"] = {"$in": [re.compile(acc, re.IGNORECASE) for acc in acc_list]}
+
+    # Facilities (booleans)
+    facilities_map = {
+        "hostel_facilities": hostel,
+        "wifi": wifi,
+        "library_facilities": library,
+        "sports_facilities": sports,
+        "canteen": canteen,
+        "medical_facilities": medical,
+    }
+    for field, value in facilities_map.items():
+        if value is True:
+            filter_query[field] = True
+
+    # Placement and average package thresholds
+    if min_placement is not None:
+        filter_query["placement_percentage"] = {"$gte": float(min_placement)}
+    if min_avg_package is not None:
+        filter_query["average_package"] = {"$gte": int(min_avg_package)}
     
     # Calculate pagination
     skip = (page - 1) * limit
