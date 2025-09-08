@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
@@ -173,8 +172,7 @@ const DeadlineTracker: React.FC = () => {
     .filter(deadline => !deadline.isCompleted && getDaysUntilDeadline(deadline.date) >= 0)
     .slice(0, 5);
 
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = false;
 
   if (upcomingDeadlines.length === 0) {
     return (

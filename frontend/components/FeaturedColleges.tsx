@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Platform, useColorScheme } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { H3, Body, Caption } from './Typography';
 import { theme } from '../constants/theme';
@@ -26,8 +26,7 @@ interface FeaturedCollegesProps {
 
 const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({ colleges, onViewAll }) => {
   const router = useRouter();
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = false;
 
   const renderStars = (rating: number) => {
     const stars = [];

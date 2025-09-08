@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, Text, LogBox, useColorScheme, TextInput } from 'react-native';
+import { View, Text, LogBox, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 // Keep the splash screen visible while we fetch resources
@@ -55,9 +55,31 @@ function FontWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ThemedRoot() {
+  return (
+    <>
+      <StatusBar style="dark" backgroundColor="#FFFFFF" />
+      <Text style={{ display: 'none' }}>.</Text>
+      <Stack 
+        screenOptions={{ 
+          headerShown: false,
+          contentStyle: { 
+            backgroundColor: '#FFFFFF',
+            fontFamily: 'SpaceGrotesk-Regular' 
+          } as any
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="preferences-setup" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="college/[id]" />
+      </Stack>
+    </>
+  );
+}
+
 export default function RootLayout() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
   return (
     <FontWrapper>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -66,23 +88,7 @@ export default function RootLayout() {
           <PreferencesProvider>
             <FavoritesProvider>
               <CompareProvider>
-              <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={isDark ? '#0B1320' : '#FFFFFF'} />
-              <Text style={{ display: 'none' }}>.</Text>
-              <Stack 
-                screenOptions={{ 
-                  headerShown: false,
-                  contentStyle: { 
-                    backgroundColor: isDark ? '#0B1320' : '#FFFFFF',
-                    fontFamily: 'SpaceGrotesk-Regular' 
-                  } as any
-                }}
-              >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="onboarding" />
-                <Stack.Screen name="preferences-setup" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="college/[id]" />
-              </Stack>
+              <ThemedRoot />
               </CompareProvider>
             </FavoritesProvider>
           </PreferencesProvider>

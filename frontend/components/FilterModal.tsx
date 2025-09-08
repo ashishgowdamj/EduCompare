@@ -7,7 +7,6 @@ import {
   TextInput,
   ScrollView,
   Dimensions,
-  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Modal from 'react-native-modal';
@@ -44,8 +43,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState<Filters>({});
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = false;
 
   const panelBg = isDark ? '#0F172A' : '#fff';
   const textPrimary = isDark ? '#E5E7EB' : '#333';

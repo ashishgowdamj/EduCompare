@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
@@ -93,8 +92,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
     return college.courses_offered.slice(0, 2);
   };
 
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = false;
   const cardBg = isDark ? '#0F172A' : '#fff';
   const border = isDark ? 'rgba(255,255,255,0.06)' : '#EAECEE';
   const primary = '#2196F3';

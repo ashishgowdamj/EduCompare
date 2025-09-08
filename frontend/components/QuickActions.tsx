@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform, useColorScheme } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Body } from './Typography';
@@ -44,8 +44,7 @@ interface QuickActionsProps {
 }
 
 const QuickActions: React.FC<QuickActionsProps> = ({ onActionPress }) => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = false;
   return (
     <View style={styles.container}>
       <Body style={[styles.sectionTitle, isDark && { color: '#E5E7EB' }]}>Quick Actions</Body>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, useColorScheme } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { H3, Body, Caption } from './Typography';
 import { useRouter } from 'expo-router';
@@ -57,8 +57,7 @@ interface RecommendationsSectionProps {
 const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewAll }) => {
   const router = useRouter();
   const { preferences, browsingHistory, isPreferencesComplete, addToBrowsingHistory } = usePreferences();
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = false;
   const { user } = useAuth();
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
