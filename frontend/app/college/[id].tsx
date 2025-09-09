@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   Image,
@@ -15,6 +14,8 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFavorites } from '../../contexts/FavoritesContext';
@@ -62,6 +63,7 @@ interface College {
 }
 
 export default function CollegeDetails() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [college, setCollege] = useState<College | null>(null);
@@ -277,7 +279,7 @@ export default function CollegeDetails() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Popular Courses</Text>
         <View style={styles.coursesGrid}>
-          {college?.courses_offered?.slice(0, 8).map((course, i) => (
+          {(college?.courses_offered || []).slice(0, 8).map((course, i) => (
             <View key={i} style={styles.courseChip}>
               <Text style={styles.courseText}>{course}</Text>
             </View>
@@ -287,16 +289,31 @@ export default function CollegeDetails() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Fees Overview</Text>
-        <View style={styles.feeTable}>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLabel}>Annual Fees</Text>
-            <Text style={styles.feeValue}>{formatFees(college?.annual_fees || 0)}</Text>
+        {college?.course_fees?.length ? (
+          <View style={styles.feeTable}>
+            {college.course_fees.map((row: any, idx: number) => (
+              <View key={idx} style={styles.feeRow}>
+                <View>
+                  <Text style={styles.feeLabel}>{row.program}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>{row.duration}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.feeValue}>{formatFees(row.fees || 0)}</Text>
+                  {row.eligibility ? (
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}>Elig: {row.eligibility}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ))}
           </View>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLabel}>Hostel (est.)</Text>
-            <Text style={styles.feeValue}>Varies</Text>
+        ) : (
+          <View style={styles.feeTable}>
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Annual Fees</Text>
+              <Text style={styles.feeValue}>{formatFees(college?.annual_fees || 0)}</Text>
+            </View>
           </View>
-        </View>
+        )}
       </View>
     </View>
   );
@@ -322,8 +339,35 @@ export default function CollegeDetails() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Year-wise Trends</Text>
+        {college?.placement_stats?.length ? (
+          <View style={styles.feeTable}>
+            {college.placement_stats.map((p: any, idx: number) => (
+              <View key={idx} style={styles.feeRow}>
+                <Text style={styles.feeLabel}>{p.year}</Text>
+                <View>
+                  <Text style={styles.feeValue}>{formatPackage(p.avg_package || 0)} avg</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>{p.placement_percentage || college?.placement_percentage}% placed</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.description}>Trend data not available</Text>
+        )}
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Top Recruiters</Text>
-        <Text style={styles.description}>Data coming soon</Text>
+        {college?.recruiters?.length ? (
+          <View style={styles.coursesGrid}>
+            {college.recruiters.map((name: string, i: number) => (
+              <View key={i} style={styles.courseChip}><Text style={styles.courseText}>{name}</Text></View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.description}>Recruiter information not available</Text>
+        )}
       </View>
     </View>
   );
@@ -435,10 +479,12 @@ export default function CollegeDetails() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Gallery</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
-          {college?.images_base64?.length ? (
-            college.images_base64.map((img, idx) => (
-              <Image key={idx} source={{ uri: `data:image/jpeg;base64,${img}` }} style={styles.galleryImage} />
+          {college?.gallery_urls?.length ? (
+            college.gallery_urls.map((url, idx) => (
+              <Image key={idx} source={{ uri: url }} style={styles.galleryImage} />
             ))
+          ) : college?.images_base64?.length ? (
+            college.images_base64.map((img, idx) => (<Image key={idx} source={{ uri: `data:image/jpeg;base64,${img}` }} style={styles.galleryImage} />))
           ) : (
             <View style={styles.emptyCard}>
               <Ionicons name="images-outline" size={28} color="#9CA3AF" />
@@ -640,7 +686,7 @@ export default function CollegeDetails() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
@@ -652,7 +698,7 @@ export default function CollegeDetails() {
 
   if (!college) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color="#FF5722" />
@@ -683,7 +729,7 @@ export default function CollegeDetails() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}
@@ -703,7 +749,11 @@ export default function CollegeDetails() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 160 }}
+      >
         {/* College Header */}
         <Animatable.View animation="fadeInUp" style={styles.collegeHeader}>
           <View style={styles.collegeHeaderContent}>
@@ -777,7 +827,16 @@ export default function CollegeDetails() {
       </ScrollView>
 
       {/* Footer Actions */}
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          {
+            paddingBottom: Math.max(12, insets.bottom + 12),
+            paddingLeft: 16 + (insets.left || 0),
+            paddingRight: 16 + (insets.right || 0),
+          },
+        ]}
+      >
         <TouchableOpacity 
           style={[styles.compareButton, isInCompare(college.id) && styles.compareButtonActive]}
           onPress={handleCompareToggle}
@@ -1202,16 +1261,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
   },
   compareButton: {
-    flex: 1,
+    flex: 1.8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#E3F2FD',
-    paddingVertical: 12,
-    borderRadius: 8,
+    height: 48,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     marginRight: 12,
+    overflow: 'hidden',
+    gap: 8,
+    minWidth: 160,
   },
   compareButtonActive: {
     backgroundColor: '#2196F3',
@@ -1220,19 +1286,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2196F3',
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: 8,
   },
   compareButtonTextActive: {
     color: '#fff',
   },
   applyButton: {
-    flex: 2,
+    flex: 0.8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    borderRadius: 8,
+    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    minWidth: 130,
   },
   applyButtonText: {
     fontSize: 16,

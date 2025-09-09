@@ -74,6 +74,11 @@ class College(BaseModel):
     website: str
     address: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Deep profile fields (optional)
+    course_fees: Optional[List[Dict[str, Any]]] = []  # [{program, duration, fees, eligibility}]
+    placement_stats: Optional[List[Dict[str, Any]]] = []  # [{year, avg_package, median_package, placement_percentage}]
+    recruiters: Optional[List[str]] = []
+    gallery_urls: Optional[List[str]] = []
 
 class CollegeCreate(BaseModel):
     name: str
@@ -107,6 +112,10 @@ class CollegeCreate(BaseModel):
     contact_phone: str
     website: str
     address: str
+    course_fees: Optional[List[Dict[str, Any]]] = []
+    placement_stats: Optional[List[Dict[str, Any]]] = []
+    recruiters: Optional[List[str]] = []
+    gallery_urls: Optional[List[str]] = []
 
 class CollegeResponse(BaseModel):
     id: str
@@ -142,6 +151,10 @@ class CollegeResponse(BaseModel):
     website: str
     address: str
     created_at: datetime
+    course_fees: List[Dict[str, Any]] = []
+    placement_stats: List[Dict[str, Any]] = []
+    recruiters: List[str] = []
+    gallery_urls: List[str] = []
 
 class CollegeSearchResponse(BaseModel):
     colleges: List[CollegeResponse]
@@ -250,7 +263,11 @@ def college_helper(college) -> dict:
         "contact_phone": college["contact_phone"],
         "website": college["website"],
         "address": college["address"],
-        "created_at": college.get("created_at", datetime.utcnow())
+        "created_at": college.get("created_at", datetime.utcnow()),
+        "course_fees": college.get("course_fees", []),
+        "placement_stats": college.get("placement_stats", []),
+        "recruiters": college.get("recruiters", []),
+        "gallery_urls": college.get("gallery_urls", []),
     }
 
 # Routes
@@ -737,7 +754,20 @@ async def initialize_dummy_data():
             "contact_email": "info@iitd.ac.in",
             "contact_phone": "+91-11-26591000",
             "website": "https://home.iitd.ac.in",
-            "address": "Hauz Khas, New Delhi - 110016"
+            "address": "Hauz Khas, New Delhi - 110016",
+            "course_fees": [
+                {"program": "B.Tech CSE", "duration": "4 years", "fees": 250000, "eligibility": "JEE Advanced"},
+                {"program": "B.Tech EE", "duration": "4 years", "fees": 240000, "eligibility": "JEE Advanced"}
+            ],
+            "placement_stats": [
+                {"year": 2023, "avg_package": 1500000, "median_package": 1350000, "placement_percentage": 95.0},
+                {"year": 2022, "avg_package": 1400000, "median_package": 1250000, "placement_percentage": 94.0}
+            ],
+            "recruiters": ["Google", "Microsoft", "Amazon", "Flipkart"],
+            "gallery_urls": [
+                "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200",
+                "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=1200"
+            ]
         },
         {
             "name": "Indian Institute of Technology Bombay",
