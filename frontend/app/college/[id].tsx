@@ -12,6 +12,8 @@ import {
   Dimensions,
   Linking,
   Platform,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -65,6 +67,10 @@ export default function CollegeDetails() {
   const [college, setCollege] = useState<College | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ title: '', body: '', rating: 4.5 });
 
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
@@ -92,6 +98,12 @@ export default function CollegeDetails() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (id && activeTab === 'reviews') {
+      loadReviews();
+    }
+  }, [id, activeTab]);
+
   const fetchCollegeDetails = async () => {
     try {
       const response = await fetch(API.url(`/api/colleges/${id}`));
@@ -103,6 +115,21 @@ export default function CollegeDetails() {
       console.error('Error fetching college details:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const res = await fetch(API.url(`/api/reviews/${id}?page=1&limit=10&sort=recent`));
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (e) {
+      console.log('reviews load error', e);
+    } finally {
+      setReviewsLoading(false);
     }
   };
 
@@ -304,16 +331,102 @@ export default function CollegeDetails() {
   const renderReviews = () => (
     <View style={styles.tabContent}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Student Reviews</Text>
-        <View style={styles.emptyCard}>
-          <Ionicons name="chatbubbles-outline" size={28} color="#9CA3AF" />
-          <Text style={styles.emptyCardTitle}>No reviews yet</Text>
-          <Text style={styles.emptyCardSub}>Be the first to write a review for this college.</Text>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => { /* TODO: navigate to review composer */ }}>
+        <View style={styles.reviewsHeader}>
+          <Text style={styles.sectionTitle}>Student Reviews</Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowReviewModal(true)}>
             <Text style={styles.primaryBtnText}>Write a Review</Text>
           </TouchableOpacity>
         </View>
+        {reviewsLoading ? (
+          <ActivityIndicator color="#2196F3" style={{ marginTop: 12 }} />
+        ) : reviews.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="chatbubbles-outline" size={28} color="#9CA3AF" />
+            <Text style={styles.emptyCardTitle}>No reviews yet</Text>
+            <Text style={styles.emptyCardSub}>Be the first to write a review for this college.</Text>
+          </View>
+        ) : (
+          reviews.map((r) => (
+            <View key={r.id} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <View style={styles.reviewRatingBadge}>
+                  <Ionicons name="star" size={12} color="#FFC107" />
+                  <Text style={styles.reviewRatingText}>{Number(r.rating_overall || 0).toFixed(1)}</Text>
+                </View>
+                {r.verified && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+                    <Text style={styles.verifiedText}>Verified</Text>
+                  </View>
+                )}
+              </View>
+              {r.title ? <Text style={styles.reviewTitle}>{r.title}</Text> : null}
+              {r.body ? <Text style={styles.reviewBody}>{r.body}</Text> : null}
+              <View style={styles.reviewFooter}>
+                <TouchableOpacity style={styles.helpfulBtn} onPress={async () => {
+                  try { await fetch(API.url(`/api/reviews/${r.id}/helpful`), { method: 'POST' }); loadReviews(); } catch {}
+                }}>
+                  <Ionicons name="thumbs-up-outline" size={14} color="#6B7280" />
+                  <Text style={styles.helpfulText}>Helpful ({r.helpful_count || 0})</Text>
+                </TouchableOpacity>
+                <Text style={styles.reviewDate}>{(r.created_at || '').toString().slice(0,10)}</Text>
+              </View>
+            </View>
+          ))
+        )}
       </View>
+
+      {/* Review Modal */}
+      <Modal visible={showReviewModal} transparent animationType="fade" onRequestClose={() => setShowReviewModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Write a Review</Text>
+            <View style={styles.inputRow}> 
+              <Text style={styles.inputLabel}>Overall Rating</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0 - 5"
+                keyboardType="decimal-pad"
+                value={String(reviewForm.rating)}
+                onChangeText={(t) => setReviewForm({ ...reviewForm, rating: parseFloat(t || '0') })}
+              />
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Title (optional)"
+              value={reviewForm.title}
+              onChangeText={(t) => setReviewForm({ ...reviewForm, title: t })}
+            />
+            <TextInput
+              style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+              multiline
+              placeholder="Share your experience..."
+              value={reviewForm.body}
+              onChangeText={(t) => setReviewForm({ ...reviewForm, body: t })}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+              <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: '#E5E7EB', marginRight: 8 }]} onPress={() => setShowReviewModal(false)}>
+                <Text style={[styles.primaryBtnText, { color: '#111827' }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
+                try {
+                  const payload = {
+                    college_id: id,
+                    user_id: 'guest',
+                    title: reviewForm.title || undefined,
+                    body: reviewForm.body || undefined,
+                    rating_overall: Math.max(0, Math.min(5, reviewForm.rating || 0)),
+                  };
+                  const res = await fetch(API.url('/api/reviews'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
+                  if (res.ok) { setShowReviewModal(false); setReviewForm({ title: '', body: '', rating: 4.5 }); loadReviews(); }
+                } catch {}
+              }}>
+                <Text style={styles.primaryBtnText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 
@@ -980,6 +1093,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2196F3',
   },
+  reviewsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reviewCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    marginTop: 12,
+  },
+  reviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  reviewRatingBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF7E6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  reviewRatingText: { fontWeight: '700', color: '#9C6B00', marginLeft: 4 },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  verifiedText: { color: '#10B981', fontWeight: '600', marginLeft: 4 },
+  reviewTitle: { marginTop: 8, fontWeight: '700', color: '#111827' },
+  reviewBody: { marginTop: 4, color: '#374151' },
+  reviewFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  helpfulText: { color: '#6B7280', marginLeft: 6 },
+  reviewDate: { color: '#9CA3AF', fontSize: 12 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  modalCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, width: '100%' },
+  modalTitle: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 8 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8 },
+  inputRow: { marginTop: 4 },
+  inputLabel: { color: '#6B7280', fontSize: 12 },
   accreditationList: {
     flexDirection: 'row',
     flexWrap: 'wrap',

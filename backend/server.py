@@ -156,6 +156,27 @@ class Favorite(BaseModel):
     college_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# Reviews Models
+class ReviewBase(BaseModel):
+    college_id: str
+    user_id: str
+    title: Optional[str] = None
+    body: Optional[str] = None
+    rating_overall: float = Field(ge=0, le=5)
+    rating_academics: Optional[float] = Field(default=None, ge=0, le=5)
+    rating_placements: Optional[float] = Field(default=None, ge=0, le=5)
+    rating_infra: Optional[float] = Field(default=None, ge=0, le=5)
+    rating_faculty: Optional[float] = Field(default=None, ge=0, le=5)
+    verified: bool = False
+
+class ReviewCreate(ReviewBase):
+    pass
+
+class ReviewResponse(ReviewBase):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    helpful_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class FavoriteCreate(BaseModel):
     user_id: str
     college_id: str
@@ -252,6 +273,9 @@ async def create_indexes():
         await db.colleges.create_index([("accreditation", 1)])     # multikey index
         await db.colleges.create_index([("placement_percentage", -1)])
         await db.colleges.create_index([("average_package", -1)])
+        # Reviews indexes
+        await db.reviews.create_index([("college_id", 1), ("created_at", -1)])
+        await db.reviews.create_index([("user_id", 1), ("college_id", 1)])
     except Exception as e:
         logging.getLogger(__name__).warning(f"Index creation failed or already exists: {e}")
 
@@ -419,6 +443,71 @@ async def get_college(college_id: str):
         raise HTTPException(status_code=404, detail="College not found")
     
     return CollegeResponse(**college_helper(college))
+
+# Reviews Routes
+@api_router.post("/reviews", response_model=ReviewResponse)
+async def create_review(review: ReviewCreate):
+    review_dict = review.dict()
+    review_dict["created_at"] = datetime.utcnow()
+    review_dict["helpful_count"] = 0
+    # allow custom id field for consistency
+    if "id" not in review_dict:
+        review_dict["id"] = str(uuid.uuid4())
+    result = await db.reviews.insert_one(review_dict)
+    created = await db.reviews.find_one({"_id": result.inserted_id})
+    # Convert ObjectId to string id for response
+    return ReviewResponse(
+        id=str(created.get("id")),
+        college_id=created["college_id"],
+        user_id=created["user_id"],
+        title=created.get("title"),
+        body=created.get("body"),
+        rating_overall=created["rating_overall"],
+        rating_academics=created.get("rating_academics"),
+        rating_placements=created.get("rating_placements"),
+        rating_infra=created.get("rating_infra"),
+        rating_faculty=created.get("rating_faculty"),
+        verified=created.get("verified", False),
+        helpful_count=created.get("helpful_count", 0),
+        created_at=created.get("created_at", datetime.utcnow()),
+    )
+
+@api_router.get("/reviews/{college_id}")
+async def list_reviews(college_id: str, page: int = Query(1, ge=1), limit: int = Query(10, ge=1, le=50), sort: str = Query("recent")):
+    skip = (page - 1) * limit
+    sort_spec = [("created_at", -1)] if sort == "recent" else [("helpful_count", -1)]
+    cursor = db.reviews.find({"college_id": college_id}).sort(sort_spec).skip(skip).limit(limit)
+    items = await cursor.to_list(length=None)
+    total = await db.reviews.count_documents({"college_id": college_id})
+    # Map to client-friendly dicts
+    def map_rev(r):
+        return {
+            "id": r.get("id", str(r.get("_id", ""))),
+            "college_id": r["college_id"],
+            "user_id": r["user_id"],
+            "title": r.get("title"),
+            "body": r.get("body"),
+            "rating_overall": r.get("rating_overall"),
+            "rating_academics": r.get("rating_academics"),
+            "rating_placements": r.get("rating_placements"),
+            "rating_infra": r.get("rating_infra"),
+            "rating_faculty": r.get("rating_faculty"),
+            "verified": r.get("verified", False),
+            "helpful_count": r.get("helpful_count", 0),
+            "created_at": r.get("created_at"),
+        }
+    return {"reviews": [map_rev(r) for r in items], "page": page, "limit": limit, "total": total}
+
+@api_router.post("/reviews/{review_id}/helpful")
+async def mark_review_helpful(review_id: str):
+    result = await db.reviews.update_one({"id": review_id}, {"$inc": {"helpful_count": 1}})
+    if result.matched_count == 0:
+        # fallback to ObjectId matching
+        try:
+            await db.reviews.update_one({"_id": ObjectId(review_id)}, {"$inc": {"helpful_count": 1}})
+        except:
+            raise HTTPException(status_code=404, detail="Review not found")
+    return {"message": "Marked helpful"}
 
 # Favorites Routes
 @api_router.post("/favorites")
