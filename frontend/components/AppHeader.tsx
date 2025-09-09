@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Platform, StatusBar } from 'react-native';
 import { H1 } from './Typography';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AppHeaderProps {
   title: string;
@@ -9,10 +8,8 @@ interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ title, rightComponent }) => {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.content}>
         <H1 style={styles.title}>{title}</H1>

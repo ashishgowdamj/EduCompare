@@ -3,17 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   ScrollView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
 import { useRouter } from 'expo-router';
+import AppHeader from '../../components/AppHeader';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -100,12 +101,10 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
-        </View>
+        <AppHeader title="Profile" />
 
         <View style={styles.guestContainer}>
           <Ionicons name="person-outline" size={64} color="#ccc" />
@@ -126,16 +125,18 @@ export default function Profile() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={24} color="#FF5722" />
-        </TouchableOpacity>
-      </View>
+      <AppHeader 
+        title="Profile"
+        rightComponent={
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Ionicons name="log-out-outline" size={24} color="#FF5722" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* User Info */}

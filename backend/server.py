@@ -14,6 +14,7 @@ import re
 from recommendation_engine import RecommendationEngine
 import io
 import csv
+import random
 import json
 import urllib.request
 
@@ -324,6 +325,60 @@ def college_helper(college) -> dict:
         "recruiters": college.get("recruiters", []),
         "gallery_urls": college.get("gallery_urls", []),
     }
+
+def _fill_defaults_for_college(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Fill required College fields with sensible defaults if missing for bulk imports."""
+    now_year = datetime.utcnow().year
+    name = data.get("name", "Unnamed College")
+    city = data.get("city", "City")
+    state = data.get("state", "State")
+    website = data.get("website") or f"https://{name.lower().replace(' ','')}.edu"
+    uni_type = data.get("university_type") or random.choice(["Government","Private","Deemed"])
+    # Defaults
+    defaults: Dict[str, Any] = {
+        "country": "India",
+        "ranking": data.get("ranking") or random.randint(1, 500),
+        "star_rating": float(data.get("star_rating") or round(random.uniform(3.2, 4.8), 1)),
+        "annual_fees": int(data.get("annual_fees") or random.randint(90000, 350000)),
+        "courses_offered": data.get("courses_offered") or ["Computer Science","Electronics","Mechanical Engineering","Civil Engineering"],
+        "established_year": int(data.get("established_year") or random.randint(1950, now_year-5)),
+        "university_type": uni_type,
+        "accreditation": data.get("accreditation") or ["AICTE"],
+        "campus_size": data.get("campus_size") or f"{random.randint(30, 300)} acres",
+        "total_students": int(data.get("total_students") or random.randint(2000, 30000)),
+        "faculty_count": int(data.get("faculty_count") or random.randint(150, 1200)),
+        "placement_percentage": float(data.get("placement_percentage") or round(random.uniform(55.0, 96.0), 1)),
+        "average_package": int(data.get("average_package") or random.randint(450000, 1500000)),
+        "highest_package": int(data.get("highest_package") or random.randint(1500000, 6000000)),
+        "hostel_facilities": bool(data.get("hostel_facilities") if data.get("hostel_facilities") is not None else random.choice([True, True, False])),
+        "library_facilities": bool(data.get("library_facilities") if data.get("library_facilities") is not None else True),
+        "sports_facilities": bool(data.get("sports_facilities") if data.get("sports_facilities") is not None else random.choice([True, True, False])),
+        "wifi": bool(data.get("wifi") if data.get("wifi") is not None else True),
+        "canteen": bool(data.get("canteen") if data.get("canteen") is not None else True),
+        "medical_facilities": bool(data.get("medical_facilities") if data.get("medical_facilities") is not None else random.choice([True, False])),
+        "description": data.get("description") or f"{name} is a higher education institute in {city}, {state}.",
+        "admission_process": data.get("admission_process") or random.choice(["JEE Main","State CET","Institutional Exam"]),
+        "contact_email": data.get("contact_email") or f"info@{name.lower().replace(' ','')}.edu",
+        "contact_phone": data.get("contact_phone") or f"+91-{random.randint(100,999)}-{random.randint(1000000,9999999)}",
+        "website": website,
+        "address": data.get("address") or f"{city}, {state}, India",
+        "gallery_urls": data.get("gallery_urls") or [],
+        "images_base64": data.get("images_base64") or [],
+        "recruiters": data.get("recruiters") or [],
+        "course_fees": data.get("course_fees") or [],
+        "placement_stats": data.get("placement_stats") or [],
+    }
+    # Preserve provided fields
+    merged = {**defaults, **data}
+    # Ensure required core fields are present
+    for key in ["name","city","state","star_rating","annual_fees","courses_offered","established_year","university_type",
+                "campus_size","total_students","faculty_count","placement_percentage","average_package","highest_package",
+                "hostel_facilities","library_facilities","sports_facilities","wifi","canteen","medical_facilities",
+                "description","admission_process","contact_email","contact_phone","website","address"]:
+        if merged.get(key) is None:
+            # fallback if something slipped through
+            merged[key] = defaults[key]
+    return merged
 
 # Routes
 
@@ -820,6 +875,41 @@ async def compare_colleges(college_ids: List[str]):
     
     return {"colleges": colleges}
 
+# Bulk import colleges (JSON)
+@api_router.post("/colleges/bulk")
+async def bulk_import_colleges(payload: Dict[str, Any]):
+    """Import a list of colleges. Missing fields are filled with sensible defaults.
+    Body format: {"colleges": [ { name, city, state, ... }, ... ]}
+    """
+    items = payload.get("colleges", [])
+    if not isinstance(items, list) or not items:
+        raise HTTPException(status_code=400, detail="'colleges' must be a non-empty list")
+
+    docs = []
+    for raw in items:
+        if not isinstance(raw, dict):
+            continue
+        # minimal required provided
+        if not raw.get("name") or not raw.get("city") or not raw.get("state"):
+            continue
+        docs.append(_fill_defaults_for_college(raw))
+
+    if not docs:
+        raise HTTPException(status_code=400, detail="No valid college items to insert")
+
+    # Dedupe by (name, city, state)
+    to_insert = []
+    for d in docs:
+        exists = await db.colleges.count_documents({"name": d["name"], "city": d["city"], "state": d["state"]})
+        if exists == 0:
+            to_insert.append(d)
+
+    if not to_insert:
+        return {"inserted": 0, "skipped": len(docs)}
+
+    result = await db.colleges.insert_many(to_insert)
+    return {"inserted": len(result.inserted_ids), "skipped": len(docs) - len(to_insert)}
+
 # Recommendation Routes
 @api_router.post("/recommendations")
 async def get_recommendations(request: RecommendationRequest):
@@ -1267,6 +1357,127 @@ async def initialize_dummy_data():
     # Insert dummy data
     result = await db.colleges.insert_many(dummy_colleges)
     return {"message": f"Successfully inserted {len(result.inserted_ids)} colleges"}
+
+@api_router.post("/dev/seed-colleges")
+async def seed_more_colleges(
+    count: int = Query(100, ge=1, le=1000),
+    with_cutoffs: bool = Query(False, description="Also seed cutoffs for generated colleges")
+):
+    """Insert synthetic colleges covering multiple branches/states for testing filters."""
+    states = [
+        ("Maharashtra", ["Mumbai", "Pune", "Nagpur", "Nashik"]),
+        ("Karnataka", ["Bengaluru", "Mysuru", "Mangaluru"]),
+        ("Tamil Nadu", ["Chennai", "Coimbatore", "Madurai"]),
+        ("Telangana", ["Hyderabad", "Warangal"]),
+        ("West Bengal", ["Kolkata", "Durgapur"]),
+        ("Delhi", ["New Delhi"]),
+        ("Uttar Pradesh", ["Lucknow", "Noida", "Kanpur"]),
+        ("Gujarat", ["Ahmedabad", "Surat", "Vadodara"]),
+        ("Rajasthan", ["Jaipur", "Jodhpur"]),
+        ("Kerala", ["Kochi", "Trivandrum"]),
+    ]
+    branches = [
+        "Computer Science", "Information Technology", "Electronics",
+        "Electrical Engineering", "Mechanical Engineering", "Civil Engineering",
+        "Chemical Engineering", "Biotechnology", "Aerospace Engineering",
+        "Data Science", "Artificial Intelligence"
+    ]
+    accreditations = [
+        ["NAAC A++", "NBA", "AICTE"],
+        ["NAAC A+", "AICTE"],
+        ["NAAC A", "NBA"],
+    ]
+    types = ["Government", "Private", "Deemed"]
+
+    def pick(lst):
+        return random.choice(lst)
+
+    docs = []
+    for i in range(count):
+        state, cities = pick(states)
+        city = pick(cities)
+        uni_type = pick(types)
+        rating = round(random.uniform(3.0, 5.0), 1)
+        fees = random.randint(80000, 450000)
+        rank = random.randint(1, 300)
+        placement = round(random.uniform(50.0, 98.0), 1)
+        avg_pkg = random.randint(400000, 2000000)
+        high_pkg = avg_pkg * random.randint(3, 8)
+        established = random.randint(1950, 2018)
+        total_students = random.randint(1500, 50000)
+        faculty = max(80, int(total_students * random.uniform(0.02, 0.06)))
+        offered = random.sample(branches, k=random.randint(4, min(7, len(branches))))
+
+        name = f"{city} Institute of Technology & Sciences {random.randint(100,999)}"
+        docs.append({
+            "name": name,
+            "city": city,
+            "state": state,
+            "country": "India",
+            "ranking": rank,
+            "star_rating": rating,
+            "annual_fees": fees,
+            "courses_offered": offered,
+            "established_year": established,
+            "university_type": uni_type,
+            "accreditation": pick(accreditations),
+            "campus_size": f"{random.randint(30, 400)} acres",
+            "total_students": total_students,
+            "faculty_count": faculty,
+            "placement_percentage": placement,
+            "average_package": avg_pkg,
+            "highest_package": high_pkg,
+            "hostel_facilities": random.choice([True, True, False]),
+            "library_facilities": True,
+            "sports_facilities": random.choice([True, True, False]),
+            "wifi": True,
+            "canteen": True,
+            "medical_facilities": random.choice([True, False]),
+            "description": "Synthetic college generated for testing filters and UI.",
+            "admission_process": pick(["JEE Main", "State CET", "Management Quota", "Institutional Exam"]),
+            "contact_email": f"info@{city.lower().replace(' ','')}.edu",
+            "contact_phone": f"+91-{random.randint(100,999)}-{random.randint(1000000,9999999)}",
+            "website": f"https://{city.lower().replace(' ','')}{random.randint(100,999)}.edu",
+            "address": f"{random.randint(1,200)}, {city}, {state}",
+        })
+
+    if not docs:
+        return {"inserted": 0}
+
+    result = await db.colleges.insert_many(docs)
+
+    seeded_cutoffs = 0
+    if with_cutoffs:
+        exams = ["JEE Main", "KCET", "MHT-CET", "WBJEE", "COMEDK"]
+        categories = ["GEN", "EWS", "OBC", "SC", "ST"]
+        cutoff_docs = []
+        # Fetch inserted documents' ids
+        ids = result.inserted_ids
+        # For each college, create a few cutoff entries across years/branches
+        years = [datetime.utcnow().year - d for d in range(0, 3)]
+        for _id, doc in zip(ids, docs):
+            cid = str(_id)
+            for y in years:
+                for branch in random.sample(doc["courses_offered"], k=min(3, len(doc["courses_offered"]))):
+                    exam = pick(exams)
+                    cat = pick(categories)
+                    closing_rank = random.randint(500, 200000)
+                    cutoff_docs.append({
+                        "college_id": cid,
+                        "year": y,
+                        "round": random.randint(1, 3),
+                        "exam": exam,
+                        "category": cat,
+                        "branch": branch,
+                        "closing_rank": closing_rank,
+                        "closing_percentile": None,
+                        "created_at": datetime.utcnow(),
+                    })
+        if cutoff_docs:
+            await db.cutoffs.insert_many(cutoff_docs)
+            seeded_cutoffs = len(cutoff_docs)
+
+    return {"inserted": len(result.inserted_ids), "cutoffs": seeded_cutoffs}
 
 # Include the router in the main app
 app.include_router(api_router)

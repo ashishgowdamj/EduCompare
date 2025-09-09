@@ -8,19 +8,17 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading) {
-      console.log('Index: Navigation logic - isFirstTime:', isFirstTime, 'user:', !!user);
-      
-      if (isFirstTime) {
-        console.log('Index: Navigating to onboarding');
-        router.replace('/onboarding');
-      } else if (user) {
-        console.log('Index: User exists, navigating to tabs');
-        router.replace('/(tabs)/home');
-      } else {
-        console.log('Index: No user, navigating to onboarding');
-        router.replace('/onboarding');
-      }
+    if (isLoading) return;
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('Index navigation', { isFirstTime, hasUser: !!user });
+    }
+    if (isFirstTime) {
+      router.replace('/onboarding');
+    } else if (user) {
+      router.replace('/(tabs)/home');
+    } else {
+      router.replace('/onboarding');
     }
   }, [isLoading, user, isFirstTime]);
 

@@ -117,6 +117,13 @@ export default function CollegeDetails() {
     }
   }, [id, activeTab]);
 
+  // Re-query cutoffs when filters change while on the cutoffs tab
+  useEffect(() => {
+    if (id && activeTab === 'cutoffs') {
+      loadCutoffs();
+    }
+  }, [cutoffFilters]);
+
   const fetchCollegeDetails = async () => {
     try {
       const response = await fetch(API.url(`/api/colleges/${id}`));
@@ -440,6 +447,54 @@ export default function CollegeDetails() {
           >
             <Text style={[styles.primaryBtnText, { fontSize: 12 }]}>Export CSV</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Filters UI */}
+        <View style={{ marginTop: 8 }}>
+          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>Filters</Text>
+          {/* Year chips */}
+          <View style={styles.chipsRow}>
+            {[0,1,2,3,4].map((offset) => {
+              const y = new Date().getFullYear() - offset;
+              const active = cutoffFilters.year === y;
+              return (
+                <TouchableOpacity key={y} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, year: active ? undefined : y }))}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{y}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Exam chips */}
+          <View style={styles.chipsRow}>
+            {(['JEE Main','KCET','MHT-CET','WBJEE','COMEDK','BITSAT'] as const).map((exam) => {
+              const active = cutoffFilters.exam === exam;
+              return (
+                <TouchableOpacity key={exam} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, exam: active ? undefined : exam }))}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{exam}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Category chips */}
+          <View style={styles.chipsRow}>
+            {(['OPEN','GEN','EWS','OBC','SC','ST'] as const).map((cat) => {
+              const active = cutoffFilters.category === cat;
+              return (
+                <TouchableOpacity key={cat} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, category: active ? undefined : cat }))}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Clear button when any filter active */}
+          {(cutoffFilters.year || cutoffFilters.exam || cutoffFilters.category) ? (
+            <TouchableOpacity onPress={() => setCutoffFilters({})} style={[styles.chip, { alignSelf: 'flex-start', backgroundColor: '#FFEFEA', borderColor: '#FFCCBC' }]}>
+              <Text style={[styles.chipText, { color: '#D84315', fontWeight: '700' }]}>Clear filters</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
         {cutoffsLoading ? (
           <ActivityIndicator color="#2196F3" />
@@ -1485,6 +1540,12 @@ const styles = StyleSheet.create({
   tr: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   td: { flex: 1, fontSize: 12, color: '#374151' },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // simple chips
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 6 },
+  chip: { backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, marginRight: 6, marginBottom: 6 },
+  chipActive: { backgroundColor: '#2196F3', borderColor: '#1E88E5' },
+  chipText: { fontSize: 12, color: '#374151', fontWeight: '600' },
+  chipTextActive: { color: '#fff' },
   emptyCard: {
     backgroundColor: '#fff',
     borderRadius: 12,

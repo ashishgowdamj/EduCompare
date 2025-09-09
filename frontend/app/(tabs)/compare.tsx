@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCompare } from '../../contexts/CompareContext';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AppHeader from '../../components/AppHeader';
 
 const COLUMN_WIDTH = 200;
 
@@ -83,7 +84,7 @@ export default function Compare() {
 
   if (list.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         
         {/* Header */}
@@ -113,21 +114,16 @@ export default function Compare() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Compare Colleges</Text>
-            <Text style={styles.headerSubtitle}>
-              {list.length} college{list.length !== 1 ? 's' : ''} selected
-            </Text>
-          </View>
+      <AppHeader
+        title={`Compare Colleges`}
+        rightComponent={
           <TouchableOpacity onPress={clearCompare} style={styles.clearButton}>
             <Text style={styles.clearButtonText}>Clear All</Text>
           </TouchableOpacity>
-        </View>
+        }
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* College Cards Section */}
@@ -302,29 +298,6 @@ const styles = StyleSheet.create({
   },
   collegeCardContent: {
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
   },
   clearButton: {
     paddingHorizontal: 12,

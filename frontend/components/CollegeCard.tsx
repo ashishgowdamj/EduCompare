@@ -43,6 +43,7 @@ interface CollegeCardProps {
   onComparePress: () => void;
   isFavorite: boolean;
   isInCompare: boolean;
+  compact?: boolean; // hides extended chips/facilities rows
 }
 
 const CollegeCard: React.FC<CollegeCardProps> = ({
@@ -52,6 +53,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
   onComparePress,
   isFavorite,
   isInCompare,
+  compact = false,
 }) => {
   const renderStars = (rating: number) => {
     const stars = [];
@@ -176,66 +178,71 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
           </View>
         </View>
 
-        {/* Course Tags */}
-        <View style={styles.coursesRow}>
-          {getTopCourses().map((course, index) => (
-            <View key={index} style={[styles.courseTag, { backgroundColor: chipBg }]}>
-              <Text style={[styles.courseTagText, { color: primary }]}>{course}</Text>
+        {/* Extended details (chips/facilities) hidden in compact mode */}
+        {!compact && (
+          <>
+            {/* Course Tags */}
+            <View style={styles.coursesRow}>
+              {getTopCourses().map((course, index) => (
+                <View key={index} style={[styles.courseTag, { backgroundColor: chipBg }]}>
+                  <Text style={[styles.courseTagText, { color: primary }]}>{course}</Text>
+                </View>
+              ))}
+              {college.courses_offered.length > 2 && (
+                <Text style={[styles.moreCourses, { color: textSecondary }]}>
+                  +{college.courses_offered.length - 2} more
+                </Text>
+              )}
             </View>
-          ))}
-          {college.courses_offered.length > 2 && (
-            <Text style={[styles.moreCourses, { color: textSecondary }]}>
-              +{college.courses_offered.length - 2} more
-            </Text>
-          )}
-        </View>
 
-        {/* Tags and Type */}
-        <View style={styles.tagsRow}>
-          <View style={[styles.tag, { backgroundColor: getTypeColor(college.university_type) }]}>
-            <Text style={[styles.tagText, { color: getTypeTextColor(college.university_type) }]}>
-              {college.university_type}
-            </Text>
-          </View>
-          
-          <View style={[styles.tag, { backgroundColor: tagBg }]}>
-            <Text style={[styles.tagText, { color: textSecondary }]}>Est. {college.established_year}</Text>
-          </View>
-          
-          {college.total_students && (
-            <View style={[styles.tag, { backgroundColor: tagBg }]}>
-              <Text style={[styles.tagText, { color: textSecondary }]}>{formatNumber(college.total_students)} Students</Text>
+            {/* Tags and Type */}
+            <View style={styles.tagsRow}>
+              <View style={[styles.tag, { backgroundColor: getTypeColor(college.university_type) }]}>
+                <Text style={[styles.tagText, { color: getTypeTextColor(college.university_type) }]}>
+                  {college.university_type}
+                </Text>
+              </View>
+              
+              <View style={[styles.tag, { backgroundColor: tagBg }]}>
+                <Text style={[styles.tagText, { color: textSecondary }]}>Est. {college.established_year}</Text>
+              </View>
+              
+              {college.total_students && (
+                <View style={[styles.tag, { backgroundColor: tagBg }]}>
+                  <Text style={[styles.tagText, { color: textSecondary }]}>{formatNumber(college.total_students)} Students</Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
 
-        {/* Facilities */}
-        <View style={styles.facilitiesRow}>
-          {college.hostel_facilities && (
-            <View style={styles.facility}>
-              <Ionicons name="bed" size={16} color="#4CAF50" />
-              <Text style={styles.facilityText}>Hostel</Text>
+            {/* Facilities */}
+            <View style={styles.facilitiesRow}>
+              {college.hostel_facilities && (
+                <View style={styles.facility}>
+                  <Ionicons name="bed" size={16} color="#4CAF50" />
+                  <Text style={styles.facilityText}>Hostel</Text>
+                </View>
+              )}
+              {college.wifi && (
+                <View style={styles.facility}>
+                  <Ionicons name="wifi" size={16} color="#4CAF50" />
+                  <Text style={styles.facilityText}>WiFi</Text>
+                </View>
+              )}
+              {college.sports_facilities && (
+                <View style={styles.facility}>
+                  <Ionicons name="basketball" size={16} color="#4CAF50" />
+                  <Text style={styles.facilityText}>Sports</Text>
+                </View>
+              )}
+              {college.library_facilities && (
+                <View style={styles.facility}>
+                  <Ionicons name="library" size={16} color="#4CAF50" />
+                  <Text style={styles.facilityText}>Library</Text>
+                </View>
+              )}
             </View>
-          )}
-          {college.wifi && (
-            <View style={styles.facility}>
-              <Ionicons name="wifi" size={16} color="#4CAF50" />
-              <Text style={styles.facilityText}>WiFi</Text>
-            </View>
-          )}
-          {college.sports_facilities && (
-            <View style={styles.facility}>
-              <Ionicons name="basketball" size={16} color="#4CAF50" />
-              <Text style={styles.facilityText}>Sports</Text>
-            </View>
-          )}
-          {college.library_facilities && (
-            <View style={styles.facility}>
-              <Ionicons name="library" size={16} color="#4CAF50" />
-              <Text style={styles.facilityText}>Library</Text>
-            </View>
-          )}
-        </View>
+          </>
+        )}
 
         {/* Footer Actions */}
         <View style={[styles.footer, { borderTopColor: divider }]}>

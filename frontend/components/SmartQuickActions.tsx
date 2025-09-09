@@ -112,7 +112,7 @@ const SmartQuickActions: React.FC = () => {
       title: 'Study Abroad',
       description: 'International opportunities',
       icon: 'airplane',
-      action: () => console.log('Navigate to study abroad'),
+      action: () => {},
       priority: 1,
     });
 

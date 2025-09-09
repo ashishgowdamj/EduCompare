@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -15,6 +15,7 @@ import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
 import { useAuth } from '../../contexts/AuthContext';
 import CollegeCard from '../../components/CollegeCard';
+import AppHeader from '../../components/AppHeader';
 
 export default function Favorites() {
   const { favorites, isLoading, refreshFavorites, removeFromFavorites } = useFavorites();
@@ -52,12 +53,13 @@ export default function Favorites() {
       onComparePress={() => handleCompareToggle(item)}
       isFavorite={true} // Always true in favorites screen
       isInCompare={isInCompare(item.id)}
+      compact
     />
   );
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <View style={styles.emptyContainer}>
           <Ionicons name="person-outline" size={64} color="#ccc" />
@@ -83,19 +85,12 @@ export default function Favorites() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>My Favorites</Text>
-          <Text style={styles.headerSubtitle}>
-            {favorites.length} saved college{favorites.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-        <Ionicons name="heart" size={28} color="#FF5722" />
-      </View>
+      <AppHeader
+        title="My Favorites"
+        rightComponent={<Ionicons name="heart" size={24} color="#FF5722" />}
+      />
 
       {/* Favorites List */}
       <View style={styles.listContainer}>
@@ -132,26 +127,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
   },
   loadingContainer: {
     flex: 1,
