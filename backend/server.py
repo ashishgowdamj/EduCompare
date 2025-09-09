@@ -6,7 +6,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import uuid
 from datetime import datetime
 from bson import ObjectId
@@ -585,9 +585,9 @@ async def create_cutoff(cutoff: CutoffCreate):
 async def list_cutoffs(
     college_id: Optional[str] = None,
     year: Optional[int] = None,
-    exam: Optional[str] = None,
-    category: Optional[str] = None,
-    branch: Optional[str] = None,
+    exam: Optional[Union[str, List[str]]] = Query(default=None),
+    category: Optional[Union[str, List[str]]] = Query(default=None),
+    branch: Optional[Union[str, List[str]]] = Query(default=None),
     round: Optional[int] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -596,9 +596,24 @@ async def list_cutoffs(
     query: Dict[str, Any] = {}
     if college_id: query["college_id"] = college_id
     if year is not None: query["year"] = year
-    if exam: query["exam"] = exam
-    if category: query["category"] = category
-    if branch: query["branch"] = branch
+    def to_list(val: Optional[Union[str, List[str]]]):
+        if val is None:
+            return None
+        if isinstance(val, list):
+            return val
+        if "," in val:
+            return [v.strip() for v in val.split(",") if v.strip()]
+        return [val]
+
+    exams = to_list(exam)
+    cats = to_list(category)
+    branches = to_list(branch)
+    if exams:
+        query["exam"] = {"$in": exams}
+    if cats:
+        query["category"] = {"$in": cats}
+    if branches:
+        query["branch"] = {"$in": branches}
     if round is not None: query["round"] = round
 
     skip = (page - 1) * limit
@@ -611,6 +626,27 @@ async def list_cutoffs(
       if "id" not in it:
         it["id"] = str(it.get("_id", ""))
     return {"items": items, "page": page, "limit": limit, "total": total}
+
+@api_router.get("/cutoffs/options")
+async def get_cutoff_options(college_id: Optional[str] = None):
+    query: Dict[str, Any] = {}
+    if college_id:
+        query["college_id"] = college_id
+    years = await db.cutoffs.distinct("year", query)
+    exams = await db.cutoffs.distinct("exam", query)
+    categories = await db.cutoffs.distinct("category", query)
+    branches = await db.cutoffs.distinct("branch", query)
+    # Clean/Sort
+    years_sorted = sorted([y for y in years if y is not None], reverse=True)
+    exams_sorted = sorted([e for e in exams if e], key=lambda s: s.lower())
+    categories_sorted = sorted([c for c in categories if c], key=lambda s: s.lower())
+    branches_sorted = sorted([b for b in branches if b], key=lambda s: s.lower())
+    return {
+        "years": years_sorted,
+        "exams": exams_sorted,
+        "categories": categories_sorted,
+        "branches": branches_sorted,
+    }
 
 @api_router.get("/cutoffs/export")
 async def export_cutoffs_csv(
@@ -668,16 +704,29 @@ async def create_seat(seat: SeatCreate):
 async def list_seats(
     college_id: Optional[str] = None,
     year: Optional[int] = None,
-    branch: Optional[str] = None,
-    category: Optional[str] = None,
+    branch: Optional[Union[str, List[str]]] = Query(default=None),
+    category: Optional[Union[str, List[str]]] = Query(default=None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200)
 ):
     query: Dict[str, Any] = {}
     if college_id: query["college_id"] = college_id
     if year is not None: query["year"] = year
-    if branch: query["branch"] = branch
-    if category: query["category"] = category
+    def to_list(val: Optional[Union[str, List[str]]]):
+        if val is None:
+            return None
+        if isinstance(val, list):
+            return val
+        if "," in val:
+            return [v.strip() for v in val.split(",") if v.strip()]
+        return [val]
+
+    branches = to_list(branch)
+    cats = to_list(category)
+    if branches:
+        query["branch"] = {"$in": branches}
+    if cats:
+        query["category"] = {"$in": cats}
 
     skip = (page - 1) * limit
     cursor = db.seats.find(query).sort([("year", -1)]).skip(skip).limit(limit)
@@ -687,6 +736,54 @@ async def list_seats(
       if "id" not in it:
         it["id"] = str(it.get("_id", ""))
     return {"items": items, "page": page, "limit": limit, "total": total}
+
+@api_router.get("/seats/export")
+async def export_seats_csv(
+    college_id: Optional[str] = None,
+    year: Optional[int] = None,
+    branch: Optional[Union[str, List[str]]] = Query(default=None),
+    category: Optional[Union[str, List[str]]] = Query(default=None),
+):
+    query: Dict[str, Any] = {}
+    if college_id: query["college_id"] = college_id
+    if year is not None: query["year"] = year
+
+    def to_list(val: Optional[Union[str, List[str]]]):
+        if val is None:
+            return None
+        if isinstance(val, list):
+            return val
+        if isinstance(val, str) and "," in val:
+            return [v.strip() for v in val.split(",") if v.strip()]
+        return [val] if val else None
+
+    branches = to_list(branch)
+    cats = to_list(category)
+    if branches:
+        query["branch"] = {"$in": branches}
+    if cats:
+        query["category"] = {"$in": cats}
+
+    cursor = db.seats.find(query).sort([("year", -1)])
+    items = await cursor.to_list(length=None)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id","college_id","year","branch","category","intake","created_at"])
+    for it in items:
+        writer.writerow([
+            it.get("id") or str(it.get("_id", "")),
+            it.get("college_id",""),
+            it.get("year",""),
+            it.get("branch",""),
+            it.get("category",""),
+            it.get("intake",""),
+            (it.get("created_at") or ""),
+        ])
+    csv_data = output.getvalue()
+    from fastapi import Response
+    filename = f"seats_{college_id or 'all'}.csv"
+    headers = {"Content-Disposition": f"attachment; filename={filename}"}
+    return Response(content=csv_data, media_type="text/csv", headers=headers)
 
 # Reviews Routes
 @api_router.post("/reviews", response_model=ReviewResponse)

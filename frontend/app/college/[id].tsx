@@ -79,7 +79,8 @@ export default function CollegeDetails() {
   const [cutoffsLoading, setCutoffsLoading] = useState(false);
   const [seats, setSeats] = useState<any[]>([]);
   const [seatsLoading, setSeatsLoading] = useState(false);
-  const [cutoffFilters, setCutoffFilters] = useState<{ year?: number; exam?: string; category?: string }>(() => ({}));
+  const [cutoffFilters, setCutoffFilters] = useState<{ year?: number; exams: string[]; categories: string[]; branches: string[] }>(() => ({ exams: [], categories: [], branches: [] }));
+  const [cutoffOptions, setCutoffOptions] = useState<{ years: number[]; exams: string[]; categories: string[]; branches: string[] }>({ years: [], exams: [], categories: [], branches: [] });
 
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
@@ -112,6 +113,7 @@ export default function CollegeDetails() {
       loadReviews();
     }
     if (id && activeTab === 'cutoffs') {
+      loadCutoffOptions();
       loadCutoffs();
       loadSeats();
     }
@@ -145,8 +147,9 @@ export default function CollegeDetails() {
       const qp = new URLSearchParams();
       qp.append('college_id', String(id));
       if (cutoffFilters.year) qp.append('year', String(cutoffFilters.year));
-      if (cutoffFilters.exam) qp.append('exam', cutoffFilters.exam);
-      if (cutoffFilters.category) qp.append('category', cutoffFilters.category);
+      cutoffFilters.exams.forEach(e => qp.append('exam', e));
+      cutoffFilters.categories.forEach(c => qp.append('category', c));
+      cutoffFilters.branches.forEach(b => qp.append('branch', b));
       const res = await fetch(API.url(`/api/cutoffs?${qp.toString()}`));
       if (res.ok) {
         const data = await res.json();
@@ -157,6 +160,16 @@ export default function CollegeDetails() {
     } finally {
       setCutoffsLoading(false);
     }
+  };
+
+  const loadCutoffOptions = async () => {
+    try {
+      const res = await fetch(API.url(`/api/cutoffs/options?college_id=${id}`));
+      if (res.ok) {
+        const data = await res.json();
+        setCutoffOptions({ years: data.years || [], exams: data.exams || [], categories: data.categories || [], branches: data.branches || [] });
+      }
+    } catch {}
   };
 
   const loadSeats = async () => {
@@ -439,8 +452,9 @@ export default function CollegeDetails() {
               const qp = new URLSearchParams();
               qp.append('college_id', String(id));
               if (cutoffFilters.year) qp.append('year', String(cutoffFilters.year));
-              if (cutoffFilters.exam) qp.append('exam', cutoffFilters.exam);
-              if (cutoffFilters.category) qp.append('category', cutoffFilters.category);
+              cutoffFilters.exams.forEach(e => qp.append('exam', e));
+              cutoffFilters.categories.forEach(c => qp.append('category', c));
+              cutoffFilters.branches.forEach(b => qp.append('branch', b));
               Linking.openURL(API.url(`/api/cutoffs/export?${qp.toString()}`)).catch(() => {});
             }}
             style={[styles.primaryBtn, { paddingVertical: 8, paddingHorizontal: 12 }]}
@@ -452,10 +466,9 @@ export default function CollegeDetails() {
         {/* Filters UI */}
         <View style={{ marginTop: 8 }}>
           <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>Filters</Text>
-          {/* Year chips */}
+          {/* Year chips (single) */}
           <View style={styles.chipsRow}>
-            {[0,1,2,3,4].map((offset) => {
-              const y = new Date().getFullYear() - offset;
+            {(cutoffOptions.years.length ? cutoffOptions.years : [new Date().getFullYear()]).map((y) => {
               const active = cutoffFilters.year === y;
               return (
                 <TouchableOpacity key={y} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, year: active ? undefined : y }))}>
@@ -465,33 +478,45 @@ export default function CollegeDetails() {
             })}
           </View>
 
-          {/* Exam chips */}
+          {/* Exam chips (multi) */}
           <View style={styles.chipsRow}>
-            {(['JEE Main','KCET','MHT-CET','WBJEE','COMEDK','BITSAT'] as const).map((exam) => {
-              const active = cutoffFilters.exam === exam;
+            {cutoffOptions.exams.map((exam) => {
+              const active = cutoffFilters.exams.includes(exam);
               return (
-                <TouchableOpacity key={exam} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, exam: active ? undefined : exam }))}>
+                <TouchableOpacity key={exam} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, exams: active ? prev.exams.filter(e => e !== exam) : [...prev.exams, exam] }))}>
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{exam}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          {/* Category chips */}
+          {/* Category chips (multi) */}
           <View style={styles.chipsRow}>
-            {(['OPEN','GEN','EWS','OBC','SC','ST'] as const).map((cat) => {
-              const active = cutoffFilters.category === cat;
+            {cutoffOptions.categories.map((cat) => {
+              const active = cutoffFilters.categories.includes(cat);
               return (
-                <TouchableOpacity key={cat} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, category: active ? undefined : cat }))}>
+                <TouchableOpacity key={cat} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, categories: active ? prev.categories.filter(c => c !== cat) : [...prev.categories, cat] }))}>
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
+          {/* Branch chips (multi) */}
+          <View style={styles.chipsRow}>
+            {cutoffOptions.branches.map((br) => {
+              const active = cutoffFilters.branches.includes(br);
+              return (
+                <TouchableOpacity key={br} style={[styles.chip, active && styles.chipActive]} onPress={() => setCutoffFilters(prev => ({ ...prev, branches: active ? prev.branches.filter(b => b !== br) : [...prev.branches, br] }))}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{br}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {/* Clear button when any filter active */}
-          {(cutoffFilters.year || cutoffFilters.exam || cutoffFilters.category) ? (
-            <TouchableOpacity onPress={() => setCutoffFilters({})} style={[styles.chip, { alignSelf: 'flex-start', backgroundColor: '#FFEFEA', borderColor: '#FFCCBC' }]}>
+          {(cutoffFilters.year || cutoffFilters.exams.length || cutoffFilters.categories.length || cutoffFilters.branches.length) ? (
+            <TouchableOpacity onPress={() => setCutoffFilters({ exams: [], categories: [], branches: [] })} style={[styles.chip, { alignSelf: 'flex-start', backgroundColor: '#FFEFEA', borderColor: '#FFCCBC' }]}>
               <Text style={[styles.chipText, { color: '#D84315', fontWeight: '700' }]}>Clear filters</Text>
             </TouchableOpacity>
           ) : null}
@@ -515,7 +540,7 @@ export default function CollegeDetails() {
               <Text style={styles.th}>Closing</Text>
             </View>
             {cutoffs.map((c, idx) => (
-              <View key={idx} style={styles.tr}>
+              <View key={idx} style={[styles.tr, idx % 2 === 0 && { backgroundColor: '#FAFAFA' }]}>
                 <Text style={styles.td}>{c.year ?? '-'}</Text>
                 <Text style={styles.td}>{c.round ?? '-'}</Text>
                 <Text style={styles.td}>{c.exam || '-'}</Text>
@@ -529,7 +554,19 @@ export default function CollegeDetails() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Seat Matrix</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Seat Matrix</Text>
+          <TouchableOpacity
+            onPress={() => {
+              const qp = new URLSearchParams();
+              qp.append('college_id', String(id));
+              Linking.openURL(API.url(`/api/seats/export?${qp.toString()}`)).catch(() => {});
+            }}
+            style={[styles.primaryBtn, { paddingVertical: 8, paddingHorizontal: 12 }]}
+          >
+            <Text style={[styles.primaryBtnText, { fontSize: 12 }]}>Export CSV</Text>
+          </TouchableOpacity>
+        </View>
         {seatsLoading ? (
           <ActivityIndicator color="#2196F3" />
         ) : seats.length === 0 ? (
@@ -543,7 +580,7 @@ export default function CollegeDetails() {
               <Text style={styles.th}>Intake</Text>
             </View>
             {seats.map((s, idx) => (
-              <View key={idx} style={styles.tr}>
+              <View key={idx} style={[styles.tr, idx % 2 === 0 && { backgroundColor: '#FAFAFA' }]}>
                 <Text style={styles.td}>{s.year ?? '-'}</Text>
                 <Text style={styles.td}>{s.branch || '-'}</Text>
                 <Text style={styles.td}>{s.category || '-'}</Text>
