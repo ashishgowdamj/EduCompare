@@ -107,6 +107,8 @@ const HomeScreen = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [savedSearchId, setSavedSearchId] = useState<string | null>(null);
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [colleges, setColleges] = useState<College[]>([]);
   const [popularSearches] = useState([
     'IIT', 'NIT', 'IIIT', 'Engineering', 'Medical', 'MBA', 'Delhi', 'Mumbai', 'Bangalore'
@@ -287,6 +289,11 @@ const HomeScreen = () => {
 
     const registerAsync = async () => {
       try {
+        // Skip token registration if no EAS projectId (Expo Go SDK 53 limitation)
+        const projectId = (Constants as any)?.expoConfig?.extra?.eas?.projectId;
+        if (!projectId) {
+          return;
+        }
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
@@ -411,6 +418,37 @@ const HomeScreen = () => {
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  const saveCurrentSearch = async () => {
+    try {
+      const payload = {
+        user_id: 'guest',
+        query: searchQuery.trim() || undefined,
+        filters: activeFilters,
+        alerts_enabled: true,
+      };
+      const res = await fetch(`${EXPO_PUBLIC_BACKEND_URL}/api/saved_searches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedSearchId(data.id || '');
+        setAlertsEnabled(true);
+      }
+    } catch (e) {}
+  };
+
+  const toggleAlerts = async () => {
+    if (!savedSearchId) return;
+    try {
+      const next = !alertsEnabled;
+      const url = `${EXPO_PUBLIC_BACKEND_URL}/api/saved_searches/${savedSearchId}?alerts_enabled=${String(next)}`;
+      const res = await fetch(url, { method: 'PATCH' });
+      if (res.ok) setAlertsEnabled(next);
+    } catch (e) {}
   };
 
   const onRefresh = useCallback(async () => {
@@ -818,6 +856,15 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.sortButton} onPress={() => setShowSortModal(true)}>
               <Ionicons name="swap-vertical" size={20} color="#2196F3" />
             </TouchableOpacity>
+            {savedSearchId ? (
+              <TouchableOpacity style={[styles.sortButton, { marginLeft: 8 }]} onPress={toggleAlerts}>
+                <Ionicons name={alertsEnabled ? 'notifications' : 'notifications-off-outline'} size={20} color={alertsEnabled ? '#FFB300' : '#2196F3'} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={[styles.sortButton, { marginLeft: 8 }]} onPress={saveCurrentSearch}>
+                <Ionicons name="bookmark-outline" size={20} color="#2196F3" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {showSuggestions && (

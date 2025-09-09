@@ -12,6 +12,10 @@ from datetime import datetime
 from bson import ObjectId
 import re
 from recommendation_engine import RecommendationEngine
+import io
+import csv
+import json
+import urllib.request
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -180,6 +184,8 @@ class ReviewBase(BaseModel):
     rating_placements: Optional[float] = Field(default=None, ge=0, le=5)
     rating_infra: Optional[float] = Field(default=None, ge=0, le=5)
     rating_faculty: Optional[float] = Field(default=None, ge=0, le=5)
+    pros: Optional[List[str]] = []
+    cons: Optional[List[str]] = []
     verified: bool = False
 
 class ReviewCreate(ReviewBase):
@@ -227,6 +233,55 @@ class RecommendationRequest(BaseModel):
     preferences: UserPreferences
     browsing_history: List[BrowsingHistoryItem] = []
     limit: int = 10
+
+# Cutoffs & Seats Models
+class Cutoff(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    college_id: str
+    year: int
+    round: Optional[int] = None
+    exam: str
+    category: Optional[str] = None
+    branch: str
+    closing_rank: Optional[int] = None
+    closing_percentile: Optional[float] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class CutoffCreate(Cutoff):
+    pass
+
+class Seat(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    college_id: str
+    year: int
+    branch: str
+    category: Optional[str] = None
+    intake: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SeatCreate(Seat):
+    pass
+
+# Lead / Enquiry Model
+class Lead(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    college_id: str
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    message: Optional[str] = None
+    user_id: Optional[str] = None
+    source: Optional[str] = "app"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Saved Searches
+class SavedSearch(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    query: Optional[str] = None
+    filters: Dict[str, Any] = {}
+    alerts_enabled: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # Helper function to convert ObjectId to string
 def college_helper(college) -> dict:
@@ -293,6 +348,9 @@ async def create_indexes():
         # Reviews indexes
         await db.reviews.create_index([("college_id", 1), ("created_at", -1)])
         await db.reviews.create_index([("user_id", 1), ("college_id", 1)])
+        # Cutoffs & Seats indexes
+        await db.cutoffs.create_index([("college_id", 1), ("year", -1), ("exam", 1), ("category", 1), ("branch", 1), ("round", 1)])
+        await db.seats.create_index([("college_id", 1), ("year", -1), ("branch", 1), ("category", 1)])
     except Exception as e:
         logging.getLogger(__name__).warning(f"Index creation failed or already exists: {e}")
 
@@ -461,6 +519,120 @@ async def get_college(college_id: str):
     
     return CollegeResponse(**college_helper(college))
 
+# Cutoffs Routes
+@api_router.post("/cutoffs")
+async def create_cutoff(cutoff: CutoffCreate):
+    data = cutoff.dict()
+    result = await db.cutoffs.insert_one(data)
+    return {"message": "Cutoff created", "id": str(result.inserted_id)}
+
+@api_router.get("/cutoffs")
+async def list_cutoffs(
+    college_id: Optional[str] = None,
+    year: Optional[int] = None,
+    exam: Optional[str] = None,
+    category: Optional[str] = None,
+    branch: Optional[str] = None,
+    round: Optional[int] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    sort: str = Query("recent")
+):
+    query: Dict[str, Any] = {}
+    if college_id: query["college_id"] = college_id
+    if year is not None: query["year"] = year
+    if exam: query["exam"] = exam
+    if category: query["category"] = category
+    if branch: query["branch"] = branch
+    if round is not None: query["round"] = round
+
+    skip = (page - 1) * limit
+    sort_spec = [("year", -1), ("round", -1)] if sort == "recent" else [("closing_rank", 1)]
+    cursor = db.cutoffs.find(query).sort(sort_spec).skip(skip).limit(limit)
+    items = await cursor.to_list(length=None)
+    total = await db.cutoffs.count_documents(query)
+    # Coerce id
+    for it in items:
+      if "id" not in it:
+        it["id"] = str(it.get("_id", ""))
+    return {"items": items, "page": page, "limit": limit, "total": total}
+
+@api_router.get("/cutoffs/export")
+async def export_cutoffs_csv(
+    college_id: Optional[str] = None,
+    year: Optional[int] = None,
+    exam: Optional[str] = None,
+    category: Optional[str] = None,
+    branch: Optional[str] = None,
+    round: Optional[int] = None,
+    sort: str = Query("recent")
+):
+    query: Dict[str, Any] = {}
+    if college_id: query["college_id"] = college_id
+    if year is not None: query["year"] = year
+    if exam: query["exam"] = exam
+    if category: query["category"] = category
+    if branch: query["branch"] = branch
+    if round is not None: query["round"] = round
+
+    sort_spec = [("year", -1), ("round", -1)] if sort == "recent" else [("closing_rank", 1)]
+    cursor = db.cutoffs.find(query).sort(sort_spec)
+    items = await cursor.to_list(length=None)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id","college_id","year","round","exam","category","branch","closing_rank","closing_percentile","created_at"])
+    for it in items:
+        writer.writerow([
+            it.get("id") or str(it.get("_id", "")),
+            it.get("college_id",""),
+            it.get("year",""),
+            it.get("round",""),
+            it.get("exam",""),
+            it.get("category",""),
+            it.get("branch",""),
+            it.get("closing_rank",""),
+            it.get("closing_percentile",""),
+            (it.get("created_at") or "")
+        ])
+
+    csv_data = output.getvalue()
+    from fastapi import Response
+    filename = f"cutoffs_{college_id or 'all'}.csv"
+    headers = {"Content-Disposition": f"attachment; filename={filename}"}
+    return Response(content=csv_data, media_type="text/csv", headers=headers)
+
+# Seats Routes
+@api_router.post("/seats")
+async def create_seat(seat: SeatCreate):
+    data = seat.dict()
+    result = await db.seats.insert_one(data)
+    return {"message": "Seat matrix created", "id": str(result.inserted_id)}
+
+@api_router.get("/seats")
+async def list_seats(
+    college_id: Optional[str] = None,
+    year: Optional[int] = None,
+    branch: Optional[str] = None,
+    category: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200)
+):
+    query: Dict[str, Any] = {}
+    if college_id: query["college_id"] = college_id
+    if year is not None: query["year"] = year
+    if branch: query["branch"] = branch
+    if category: query["category"] = category
+
+    skip = (page - 1) * limit
+    cursor = db.seats.find(query).sort([("year", -1)]).skip(skip).limit(limit)
+    items = await cursor.to_list(length=None)
+    total = await db.seats.count_documents(query)
+    for it in items:
+      if "id" not in it:
+        it["id"] = str(it.get("_id", ""))
+    return {"items": items, "page": page, "limit": limit, "total": total}
+
 # Reviews Routes
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate):
@@ -509,6 +681,8 @@ async def list_reviews(college_id: str, page: int = Query(1, ge=1), limit: int =
             "rating_placements": r.get("rating_placements"),
             "rating_infra": r.get("rating_infra"),
             "rating_faculty": r.get("rating_faculty"),
+            "pros": r.get("pros", []),
+            "cons": r.get("cons", []),
             "verified": r.get("verified", False),
             "helpful_count": r.get("helpful_count", 0),
             "created_at": r.get("created_at"),
@@ -572,6 +746,46 @@ async def get_user_favorites(user_id: str):
             continue
     
     return {"favorites": colleges}
+
+# Leads Routes
+@api_router.post("/leads")
+async def create_lead(lead: Lead):
+    data = lead.dict()
+    result = await db.leads.insert_one(data)
+    # Optional webhook forward
+    webhook_url = os.environ.get('LEAD_WEBHOOK_URL')
+    if webhook_url:
+        try:
+            req = urllib.request.Request(webhook_url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
+            urllib.request.urlopen(req, timeout=3)  # fire-and-forget best effort
+        except Exception as e:
+            logger.warning(f"Lead webhook failed: {e}")
+    return {"message": "Lead submitted", "id": str(result.inserted_id)}
+
+# Saved Searches Routes
+@api_router.post("/saved_searches")
+async def create_saved_search(search: SavedSearch):
+    data = search.dict()
+    result = await db.saved_searches.insert_one(data)
+    return {"message": "Saved", "id": str(result.inserted_id)}
+
+@api_router.get("/saved_searches/{user_id}")
+async def list_saved_searches(user_id: str):
+    items = await db.saved_searches.find({"user_id": user_id}).sort([("created_at", -1)]).to_list(length=None)
+    for it in items:
+        if "id" not in it:
+            it["id"] = str(it.get("_id", ""))
+    return {"items": items}
+
+@api_router.patch("/saved_searches/{search_id}")
+async def update_saved_search(search_id: str, alerts_enabled: Optional[bool] = None):
+    update: Dict[str, Any] = {}
+    if alerts_enabled is not None:
+        update["alerts_enabled"] = alerts_enabled
+    if not update:
+        raise HTTPException(status_code=400, detail="No update fields provided")
+    await db.saved_searches.update_one({"$or": [{"id": search_id}, {"_id": ObjectId(search_id)}]}, {"$set": update})
+    return {"message": "Updated"}
 
 # Compare Routes
 @api_router.post("/compare")

@@ -117,17 +117,17 @@ export default function Compare() {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Compare Colleges</Text>
-          <Text style={styles.headerSubtitle}>
-            {list.length} college{list.length !== 1 ? 's' : ''} selected
-          </Text>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Compare Colleges</Text>
+            <Text style={styles.headerSubtitle}>
+              {list.length} college{list.length !== 1 ? 's' : ''} selected
+            </Text>
+          </View>
+          <TouchableOpacity onPress={clearCompare} style={styles.clearButton}>
+            <Text style={styles.clearButtonText}>Clear All</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={clearCompare} style={styles.clearButton}>
-          <Text style={styles.clearButtonText}>Clear All</Text>
-        </TouchableOpacity>
-      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* College Cards Section */}
@@ -183,7 +183,7 @@ export default function Compare() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Key Metrics</Text>
             <View style={styles.sectionContent}>
-              {list.map((college, index) => (
+              {list.map((college) => (
                 <View key={college.id} style={styles.detailRow}>
                   <Text style={styles.collegeNameInDetail}>{college.name}</Text>
                   <View style={styles.detailGrid}>
@@ -435,10 +435,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  comparisonContainer: {
-    backgroundColor: '#f8f9fa',
-    paddingBottom: 16,
-  },
+  comparisonContainer: { backgroundColor: '#f8f9fa', paddingHorizontal: 16, paddingBottom: 16 },
   sectionContainer: {
     backgroundColor: '#fff',
     marginBottom: 12,

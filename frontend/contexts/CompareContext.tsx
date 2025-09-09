@@ -29,6 +29,21 @@ const CompareContext = createContext<CompareContextType | undefined>(undefined);
 export const CompareProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [compareList, setCompareList] = useState<College[]>([]);
 
+  // Hydrate from AsyncStorage on mount
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('compareList');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) setCompareList(parsed);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
+
   const addToCompare = async (college: College) => {
     if (compareList.length >= 3) {
       // Maximum 3 colleges for comparison

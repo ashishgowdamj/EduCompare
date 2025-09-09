@@ -73,6 +73,13 @@ export default function CollegeDetails() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState({ title: '', body: '', rating: 4.5 });
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [leadForm, setLeadForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [cutoffs, setCutoffs] = useState<any[]>([]);
+  const [cutoffsLoading, setCutoffsLoading] = useState(false);
+  const [seats, setSeats] = useState<any[]>([]);
+  const [seatsLoading, setSeatsLoading] = useState(false);
+  const [cutoffFilters, setCutoffFilters] = useState<{ year?: number; exam?: string; category?: string }>(() => ({}));
 
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
@@ -104,6 +111,10 @@ export default function CollegeDetails() {
     if (id && activeTab === 'reviews') {
       loadReviews();
     }
+    if (id && activeTab === 'cutoffs') {
+      loadCutoffs();
+      loadSeats();
+    }
   }, [id, activeTab]);
 
   const fetchCollegeDetails = async () => {
@@ -117,6 +128,45 @@ export default function CollegeDetails() {
       console.error('Error fetching college details:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCutoffs = async () => {
+    if (!id) return;
+    try {
+      setCutoffsLoading(true);
+      const qp = new URLSearchParams();
+      qp.append('college_id', String(id));
+      if (cutoffFilters.year) qp.append('year', String(cutoffFilters.year));
+      if (cutoffFilters.exam) qp.append('exam', cutoffFilters.exam);
+      if (cutoffFilters.category) qp.append('category', cutoffFilters.category);
+      const res = await fetch(API.url(`/api/cutoffs?${qp.toString()}`));
+      if (res.ok) {
+        const data = await res.json();
+        setCutoffs(data.items || []);
+      }
+    } catch (e) {
+      console.log('cutoffs load error', e);
+    } finally {
+      setCutoffsLoading(false);
+    }
+  };
+
+  const loadSeats = async () => {
+    if (!id) return;
+    try {
+      setSeatsLoading(true);
+      const qp = new URLSearchParams();
+      qp.append('college_id', String(id));
+      const res = await fetch(API.url(`/api/seats?${qp.toString()}`));
+      if (res.ok) {
+        const data = await res.json();
+        setSeats(data.items || []);
+      }
+    } catch (e) {
+      console.log('seats load error', e);
+    } finally {
+      setSeatsLoading(false);
     }
   };
 
@@ -372,6 +422,85 @@ export default function CollegeDetails() {
     </View>
   );
 
+  const renderCutoffs = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Cutoffs</Text>
+          <TouchableOpacity
+            onPress={() => {
+              const qp = new URLSearchParams();
+              qp.append('college_id', String(id));
+              if (cutoffFilters.year) qp.append('year', String(cutoffFilters.year));
+              if (cutoffFilters.exam) qp.append('exam', cutoffFilters.exam);
+              if (cutoffFilters.category) qp.append('category', cutoffFilters.category);
+              Linking.openURL(API.url(`/api/cutoffs/export?${qp.toString()}`)).catch(() => {});
+            }}
+            style={[styles.primaryBtn, { paddingVertical: 8, paddingHorizontal: 12 }]}
+          >
+            <Text style={[styles.primaryBtnText, { fontSize: 12 }]}>Export CSV</Text>
+          </TouchableOpacity>
+        </View>
+        {cutoffsLoading ? (
+          <ActivityIndicator color="#2196F3" />
+        ) : cutoffs.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="filter" size={28} color="#9CA3AF" />
+            <Text style={styles.emptyCardTitle}>No cutoff data</Text>
+            <Text style={styles.emptyCardSub}>We’ll add cutoffs for this college soon.</Text>
+          </View>
+        ) : (
+          <View style={styles.table}>
+            <View style={styles.tableHeader}>
+              <Text style={styles.th}>Year</Text>
+              <Text style={styles.th}>Round</Text>
+              <Text style={styles.th}>Exam</Text>
+              <Text style={styles.th}>Category</Text>
+              <Text style={styles.th}>Branch</Text>
+              <Text style={styles.th}>Closing</Text>
+            </View>
+            {cutoffs.map((c, idx) => (
+              <View key={idx} style={styles.tr}>
+                <Text style={styles.td}>{c.year ?? '-'}</Text>
+                <Text style={styles.td}>{c.round ?? '-'}</Text>
+                <Text style={styles.td}>{c.exam || '-'}</Text>
+                <Text style={styles.td}>{c.category || '-'}</Text>
+                <Text style={styles.td}>{c.branch || '-'}</Text>
+                <Text style={styles.td}>{c.closing_rank ? `Rank ${c.closing_rank}` : (c.closing_percentile ? `${Number(c.closing_percentile).toFixed(2)}%` : '-')}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Seat Matrix</Text>
+        {seatsLoading ? (
+          <ActivityIndicator color="#2196F3" />
+        ) : seats.length === 0 ? (
+          <Text style={styles.description}>Seat matrix not available</Text>
+        ) : (
+          <View style={styles.table}>
+            <View style={styles.tableHeader}>
+              <Text style={styles.th}>Year</Text>
+              <Text style={styles.th}>Branch</Text>
+              <Text style={styles.th}>Category</Text>
+              <Text style={styles.th}>Intake</Text>
+            </View>
+            {seats.map((s, idx) => (
+              <View key={idx} style={styles.tr}>
+                <Text style={styles.td}>{s.year ?? '-'}</Text>
+                <Text style={styles.td}>{s.branch || '-'}</Text>
+                <Text style={styles.td}>{s.category || '-'}</Text>
+                <Text style={styles.td}>{s.intake ?? '-'}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
   const renderReviews = () => (
     <View style={styles.tabContent}>
       <View style={styles.section}>
@@ -404,8 +533,36 @@ export default function CollegeDetails() {
                   </View>
                 )}
               </View>
-              {r.title ? <Text style={styles.reviewTitle}>{r.title}</Text> : null}
+            {r.title ? <Text style={styles.reviewTitle}>{r.title}</Text> : null}
               {r.body ? <Text style={styles.reviewBody}>{r.body}</Text> : null}
+              {(r.rating_academics || r.rating_placements || r.rating_infra || r.rating_faculty) ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
+                  {r.rating_academics ? (<View style={styles.ratingChip}><Text style={styles.ratingChipText}>Academics: {Number(r.rating_academics).toFixed(1)}★</Text></View>) : null}
+                  {r.rating_placements ? (<View style={styles.ratingChip}><Text style={styles.ratingChipText}>Placements: {Number(r.rating_placements).toFixed(1)}★</Text></View>) : null}
+                  {r.rating_infra ? (<View style={styles.ratingChip}><Text style={styles.ratingChipText}>Infra: {Number(r.rating_infra).toFixed(1)}★</Text></View>) : null}
+                  {r.rating_faculty ? (<View style={styles.ratingChip}><Text style={styles.ratingChipText}>Faculty: {Number(r.rating_faculty).toFixed(1)}★</Text></View>) : null}
+                </View>
+              ) : null}
+              {(Array.isArray(r.pros) && r.pros.length) || (Array.isArray(r.cons) && r.cons.length) ? (
+                <View style={{ marginTop: 8 }}>
+                  {Array.isArray(r.pros) && r.pros.length ? (
+                    <View style={{ marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700', marginBottom: 4 }}>Pros</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                        {r.pros.map((p: string, i: number) => (<View key={i} style={styles.bulletChip}><Text style={styles.bulletChipText}>{p}</Text></View>))}
+                      </View>
+                    </View>
+                  ) : null}
+                  {Array.isArray(r.cons) && r.cons.length ? (
+                    <View>
+                      <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700', marginBottom: 4 }}>Cons</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                        {r.cons.map((c: string, i: number) => (<View key={i} style={[styles.bulletChip, { backgroundColor: '#FFF1F2', borderColor: '#FBCFE8' }]}><Text style={[styles.bulletChipText, { color: '#9D174D' }]}>{c}</Text></View>))}
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
               <View style={styles.reviewFooter}>
                 <TouchableOpacity style={styles.helpfulBtn} onPress={async () => {
                   try { await fetch(API.url(`/api/reviews/${r.id}/helpful`), { method: 'POST' }); loadReviews(); } catch {}
@@ -435,6 +592,22 @@ export default function CollegeDetails() {
                 onChangeText={(t) => setReviewForm({ ...reviewForm, rating: parseFloat(t || '0') })}
               />
             </View>
+            <View style={styles.inputRow}>
+              <Text style={styles.inputLabel}>Academics ★</Text>
+              <TextInput style={styles.input} placeholder="0 - 5" keyboardType="decimal-pad" onChangeText={(t) => setReviewForm({ ...reviewForm, rating_academics: parseFloat(t || '0') as any })} />
+            </View>
+            <View style={styles.inputRow}>
+              <Text style={styles.inputLabel}>Placements ★</Text>
+              <TextInput style={styles.input} placeholder="0 - 5" keyboardType="decimal-pad" onChangeText={(t) => setReviewForm({ ...reviewForm, rating_placements: parseFloat(t || '0') as any })} />
+            </View>
+            <View style={styles.inputRow}>
+              <Text style={styles.inputLabel}>Infrastructure ★</Text>
+              <TextInput style={styles.input} placeholder="0 - 5" keyboardType="decimal-pad" onChangeText={(t) => setReviewForm({ ...reviewForm, rating_infra: parseFloat(t || '0') as any })} />
+            </View>
+            <View style={styles.inputRow}>
+              <Text style={styles.inputLabel}>Faculty ★</Text>
+              <TextInput style={styles.input} placeholder="0 - 5" keyboardType="decimal-pad" onChangeText={(t) => setReviewForm({ ...reviewForm, rating_faculty: parseFloat(t || '0') as any })} />
+            </View>
             <TextInput
               style={styles.input}
               placeholder="Title (optional)"
@@ -448,19 +621,35 @@ export default function CollegeDetails() {
               value={reviewForm.body}
               onChangeText={(t) => setReviewForm({ ...reviewForm, body: t })}
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Pros (comma separated)"
+              onChangeText={(t) => setReviewForm({ ...reviewForm, pros: t as any })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Cons (comma separated)"
+              onChangeText={(t) => setReviewForm({ ...reviewForm, cons: t as any })}
+            />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
               <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: '#E5E7EB', marginRight: 8 }]} onPress={() => setShowReviewModal(false)}>
                 <Text style={[styles.primaryBtnText, { color: '#111827' }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
                 try {
-                  const payload = {
+                  const payload: any = {
                     college_id: id,
                     user_id: 'guest',
                     title: reviewForm.title || undefined,
                     body: reviewForm.body || undefined,
                     rating_overall: Math.max(0, Math.min(5, reviewForm.rating || 0)),
                   };
+                  if ((reviewForm as any).rating_academics != null) payload.rating_academics = Math.max(0, Math.min(5, Number((reviewForm as any).rating_academics)));
+                  if ((reviewForm as any).rating_placements != null) payload.rating_placements = Math.max(0, Math.min(5, Number((reviewForm as any).rating_placements)));
+                  if ((reviewForm as any).rating_infra != null) payload.rating_infra = Math.max(0, Math.min(5, Number((reviewForm as any).rating_infra)));
+                  if ((reviewForm as any).rating_faculty != null) payload.rating_faculty = Math.max(0, Math.min(5, Number((reviewForm as any).rating_faculty)));
+                  if ((reviewForm as any).pros) payload.pros = String((reviewForm as any).pros).split(',').map(s => s.trim()).filter(Boolean);
+                  if ((reviewForm as any).cons) payload.cons = String((reviewForm as any).cons).split(',').map(s => s.trim()).filter(Boolean);
                   const res = await fetch(API.url('/api/reviews'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
                   if (res.ok) { setShowReviewModal(false); setReviewForm({ title: '', body: '', rating: 4.5 }); loadReviews(); }
                 } catch {}
@@ -720,6 +909,7 @@ export default function CollegeDetails() {
   const tabs = [
     { id: 'overview', title: 'Overview', icon: 'information-circle' },
     { id: 'courses', title: 'Courses & Fees', icon: 'book' },
+    { id: 'cutoffs', title: 'Cutoffs', icon: 'filter' },
     { id: 'placements', title: 'Placements', icon: 'trending-up' },
     { id: 'facilities', title: 'Facilities', icon: 'business' },
     { id: 'admissions', title: 'Admissions', icon: 'school' },
@@ -818,6 +1008,7 @@ export default function CollegeDetails() {
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'courses' && renderCoursesFees()}
           {activeTab === 'placements' && renderPlacements()}
+          {activeTab === 'cutoffs' && renderCutoffs()}
           {activeTab === 'facilities' && renderFacilities()}
           {activeTab === 'admissions' && renderAdmissions()}
           {activeTab === 'reviews' && renderReviews()}
@@ -854,11 +1045,70 @@ export default function CollegeDetails() {
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.applyButton}>
-          <Text style={styles.applyButtonText}>Apply Now</Text>
+        <TouchableOpacity style={styles.applyButton} onPress={() => setShowLeadModal(true)}>
+          <Text style={styles.applyButtonText}>Apply / Enquire</Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
+      {/* Lead / Enquiry Modal */}
+      <Modal visible={showLeadModal} transparent animationType="fade" onRequestClose={() => setShowLeadModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Apply / Enquire</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              value={leadForm.name}
+              onChangeText={(t) => setLeadForm({ ...leadForm, name: t })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={leadForm.email}
+              onChangeText={(t) => setLeadForm({ ...leadForm, email: t })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Phone"
+              keyboardType="phone-pad"
+              value={leadForm.phone}
+              onChangeText={(t) => setLeadForm({ ...leadForm, phone: t })}
+            />
+            <TextInput
+              style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
+              placeholder="Message (optional)"
+              multiline
+              value={leadForm.message}
+              onChangeText={(t) => setLeadForm({ ...leadForm, message: t })}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+              <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: '#E5E7EB', marginRight: 8 }]} onPress={() => setShowLeadModal(false)}>
+                <Text style={[styles.primaryBtnText, { color: '#111827' }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
+                try {
+                  const payload = {
+                    college_id: id,
+                    name: leadForm.name.trim(),
+                    email: leadForm.email.trim() || undefined,
+                    phone: leadForm.phone.trim() || undefined,
+                    message: leadForm.message.trim() || undefined,
+                    user_id: 'guest',
+                    source: 'app'
+                  };
+                  if (!payload.name) return;
+                  const res = await fetch(API.url('/api/leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
+                  if (res.ok) { setShowLeadModal(false); setLeadForm({ name: '', email: '', phone: '', message: '' }); }
+                } catch {}
+              }}>
+                <Text style={styles.primaryBtnText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1228,6 +1478,13 @@ const styles = StyleSheet.create({
   // Gallery & Empty states
   galleryRow: { paddingVertical: 8 },
   galleryImage: { width: 220, height: 140, borderRadius: 12, marginRight: 12, backgroundColor: '#f0f0f0' },
+  // Cutoffs
+  tableHeader: { flexDirection: 'row', backgroundColor: '#f8f9fa', paddingHorizontal: 12, paddingVertical: 10, borderTopLeftRadius: 10, borderTopRightRadius: 10 },
+  th: { flex: 1, fontSize: 12, fontWeight: '700', color: '#374151' },
+  table: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden' },
+  tr: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  td: { flex: 1, fontSize: 12, color: '#374151' },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   emptyCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -1240,6 +1497,10 @@ const styles = StyleSheet.create({
   emptyCardSub: { color: '#6B7280', marginTop: 4, textAlign: 'center' },
   primaryBtn: { marginTop: 12, backgroundColor: '#2196F3', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10 },
   primaryBtnText: { color: '#fff', fontWeight: '700' },
+  ratingChip: { backgroundColor: '#E8F5E9', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6, marginTop: 6 },
+  ratingChipText: { color: '#1B5E20', fontSize: 11, fontWeight: '700' },
+  bulletChip: { backgroundColor: '#E6F0FF', borderWidth: 1, borderColor: '#C5D6FD', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6, marginBottom: 6 },
+  bulletChipText: { color: '#0B4DB6', fontSize: 11, fontWeight: '600' },
   contactInfo: {
     marginLeft: 16,
     flex: 1,
