@@ -95,7 +95,7 @@ export default function Favorites() {
       {/* Favorites List */}
       <View style={styles.listContainer}>
         <FlashList
-          data={favorites}
+          data={[...new Map(favorites.map(f => [f.id, f])).values()]}
           renderItem={renderCollegeItem}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}

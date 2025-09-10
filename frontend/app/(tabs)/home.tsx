@@ -414,10 +414,22 @@ const HomeScreen = () => {
 
       const data: CollegeSearchResponse = await response.json();
 
+      const uniqueById = (arr: College[]) => {
+        const seen = new Set<string>();
+        const out: College[] = [];
+        for (const c of arr) {
+          if (!c?.id) continue;
+          if (seen.has(c.id)) continue;
+          seen.add(c.id);
+          out.push(c);
+        }
+        return out;
+      };
+
       if (reset) {
-        setColleges(data.colleges);
+        setColleges(uniqueById(data.colleges));
       } else {
-        setColleges(prev => [...prev, ...data.colleges]);
+        setColleges(prev => uniqueById([...prev, ...data.colleges]));
       }
 
       setHasMore(data.page < data.total_pages);

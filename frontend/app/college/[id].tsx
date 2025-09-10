@@ -61,6 +61,9 @@ interface College {
   website: string;
   address: string;
   accreditation: string[];
+  departments?: string[];
+  campus_life?: string[];
+  video_urls?: string[];
 }
 
 export default function CollegeDetails() {
@@ -796,6 +799,65 @@ export default function CollegeDetails() {
     </View>
   );
 
+  const renderVideos = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Video Gallery</Text>
+        {college?.video_urls?.length ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
+            {college.video_urls.map((url, idx) => (
+              <TouchableOpacity key={idx} onPress={() => Linking.openURL(url).catch(() => {})} style={[styles.videoThumb, styles.galleryImage] as any}>
+                <View style={styles.playOverlay}>
+                  <Ionicons name="play" size={28} color="#fff" />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyCard}>
+            <Ionicons name="videocam-outline" size={28} color="#9CA3AF" />
+            <Text style={styles.emptyCardTitle}>No videos available</Text>
+            <Text style={styles.emptyCardSub}>We’ll add campus videos soon.</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderDepartments = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Departments</Text>
+        {college?.departments?.length ? (
+          <View style={styles.coursesGrid}>
+            {college.departments.map((d, i) => (
+              <View key={i} style={styles.courseChip}><Text style={styles.courseText}>{d}</Text></View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.description}>Department information not available</Text>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderCampusLife = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Campus Life</Text>
+        {college?.campus_life?.length ? (
+          <View style={styles.coursesGrid}>
+            {college.campus_life.map((item, i) => (
+              <View key={i} style={styles.courseChip}><Text style={styles.courseText}>{item}</Text></View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.description}>Explore facilities and student activities coming soon.</Text>
+        )}
+      </View>
+    </View>
+  );
+
   // Quick action handlers
   const handleCall = () => {
     if (!college?.contact_phone) return;
@@ -1022,6 +1084,9 @@ export default function CollegeDetails() {
     { id: 'cutoffs', title: 'Cutoffs', icon: 'filter' },
     { id: 'placements', title: 'Placements', icon: 'trending-up' },
     { id: 'facilities', title: 'Facilities', icon: 'business' },
+    { id: 'departments', title: 'Departments', icon: 'layers' },
+    { id: 'campus', title: 'Campus Life', icon: 'happy' },
+    { id: 'videos', title: 'Videos', icon: 'videocam' },
     { id: 'admissions', title: 'Admissions', icon: 'school' },
     { id: 'reviews', title: 'Reviews', icon: 'chatbubbles' },
     { id: 'gallery', title: 'Gallery', icon: 'images' },
@@ -1118,6 +1183,9 @@ export default function CollegeDetails() {
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'courses' && renderCoursesFees()}
           {activeTab === 'placements' && renderPlacements()}
+          {activeTab === 'departments' && renderDepartments()}
+          {activeTab === 'campus' && renderCampusLife()}
+          {activeTab === 'videos' && renderVideos()}
           {activeTab === 'cutoffs' && renderCutoffs()}
           {activeTab === 'facilities' && renderFacilities()}
           {activeTab === 'admissions' && renderAdmissions()}
@@ -1616,6 +1684,8 @@ const styles = StyleSheet.create({
   // Gallery & Empty states
   galleryRow: { paddingVertical: 8 },
   galleryImage: { width: 220, height: 140, borderRadius: 12, marginRight: 12, backgroundColor: '#f0f0f0' },
+  videoThumb: { alignItems: 'center', justifyContent: 'center' },
+  playOverlay: { position: 'absolute', width: 220, height: 140, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 12 },
   // Cutoffs
   tableHeader: { flexDirection: 'row', backgroundColor: '#f8f9fa', paddingHorizontal: 12, paddingVertical: 10, borderTopLeftRadius: 10, borderTopRightRadius: 10 },
   th: { flex: 1, fontSize: 12, fontWeight: '700', color: '#374151' },

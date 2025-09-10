@@ -84,6 +84,10 @@ class College(BaseModel):
     placement_stats: Optional[List[Dict[str, Any]]] = []  # [{year, avg_package, median_package, placement_percentage}]
     recruiters: Optional[List[str]] = []
     gallery_urls: Optional[List[str]] = []
+    # New optional enrichment fields
+    departments: Optional[List[str]] = []
+    campus_life: Optional[List[str]] = []  # e.g., clubs, fests, amenities highlights
+    video_urls: Optional[List[str]] = []    # MP4/YouTube links
 
 class CollegeCreate(BaseModel):
     name: str
@@ -121,6 +125,9 @@ class CollegeCreate(BaseModel):
     placement_stats: Optional[List[Dict[str, Any]]] = []
     recruiters: Optional[List[str]] = []
     gallery_urls: Optional[List[str]] = []
+    departments: Optional[List[str]] = []
+    campus_life: Optional[List[str]] = []
+    video_urls: Optional[List[str]] = []
 
 class CollegeResponse(BaseModel):
     id: str
@@ -160,6 +167,9 @@ class CollegeResponse(BaseModel):
     placement_stats: List[Dict[str, Any]] = []
     recruiters: List[str] = []
     gallery_urls: List[str] = []
+    departments: List[str] = []
+    campus_life: List[str] = []
+    video_urls: List[str] = []
 
 class CollegeSearchResponse(BaseModel):
     colleges: List[CollegeResponse]
@@ -324,6 +334,9 @@ def college_helper(college) -> dict:
         "placement_stats": college.get("placement_stats", []),
         "recruiters": college.get("recruiters", []),
         "gallery_urls": college.get("gallery_urls", []),
+        "departments": college.get("departments", []),
+        "campus_life": college.get("campus_life", []),
+        "video_urls": college.get("video_urls", []),
     }
 
 def _fill_defaults_for_college(data: Dict[str, Any]) -> Dict[str, Any]:
