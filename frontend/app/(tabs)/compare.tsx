@@ -86,14 +86,7 @@ export default function Compare() {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Compare Colleges</Text>
-            <Text style={styles.headerSubtitle}>Add colleges to compare side by side</Text>
-          </View>
-        </View>
+        <AppHeader title="Compare Colleges" />
 
         <View style={styles.emptyContainer}>
           <Ionicons name="analytics-outline" size={64} color="#ccc" />

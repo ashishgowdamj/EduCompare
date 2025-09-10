@@ -13,6 +13,7 @@ import {
   Platform,
   Modal,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,6 +76,23 @@ export default function CollegeDetails() {
   const [reviewForm, setReviewForm] = useState({ title: '', body: '', rating: 4.5 });
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [leadForm, setLeadForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [leadErrors, setLeadErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+
+  const validateLead = () => {
+    const errs: { name?: string; email?: string; phone?: string } = {};
+    const name = leadForm.name.trim();
+    const email = leadForm.email.trim();
+    const phone = leadForm.phone.trim();
+    if (!name) errs.name = 'Name is required';
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email';
+    if (phone) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 7 || digits.length > 15) errs.phone = 'Enter a valid phone number';
+    }
+    setLeadErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
   const [cutoffs, setCutoffs] = useState<any[]>([]);
   const [cutoffsLoading, setCutoffsLoading] = useState(false);
   const [seats, setSeats] = useState<any[]>([]);
@@ -1151,23 +1169,42 @@ export default function CollegeDetails() {
               style={styles.input}
               placeholder="Full Name"
               value={leadForm.name}
-              onChangeText={(t) => setLeadForm({ ...leadForm, name: t })}
+              onChangeText={(t) => {
+                // prevent leading spaces while typing
+                const cleaned = t.replace(/^\s+/, '');
+                setLeadForm({ ...leadForm, name: cleaned });
+              }}
             />
+            {leadErrors.name ? <Text style={{ color: '#D84315', fontSize: 12, marginTop: 4 }}>{leadErrors.name}</Text> : null}
             <TextInput
               style={styles.input}
               placeholder="Email"
               keyboardType="email-address"
               autoCapitalize="none"
               value={leadForm.email}
-              onChangeText={(t) => setLeadForm({ ...leadForm, email: t })}
+              onChangeText={(t) => {
+                // strip spaces and lowercase
+                const cleaned = t.replace(/\s/g, '').toLowerCase();
+                setLeadForm({ ...leadForm, email: cleaned });
+              }}
             />
+            {leadErrors.email ? <Text style={{ color: '#D84315', fontSize: 12, marginTop: 4 }}>{leadErrors.email}</Text> : null}
             <TextInput
               style={styles.input}
-              placeholder="Phone"
+              placeholder="Phone (digits only)"
               keyboardType="phone-pad"
               value={leadForm.phone}
-              onChangeText={(t) => setLeadForm({ ...leadForm, phone: t })}
+              maxLength={15}
+              onChangeText={(t) => {
+                const digitsOnly = t.replace(/\D/g, '');
+                setLeadForm({ ...leadForm, phone: digitsOnly });
+              }}
             />
+            {leadErrors.phone ? (
+              <Text style={{ color: '#D84315', fontSize: 12, marginTop: 4 }}>{leadErrors.phone}</Text>
+            ) : (
+              <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 4 }}>Enter 7–15 digits</Text>
+            )}
             <TextInput
               style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
               placeholder="Message (optional)"
@@ -1176,11 +1213,13 @@ export default function CollegeDetails() {
               onChangeText={(t) => setLeadForm({ ...leadForm, message: t })}
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
-              <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: '#E5E7EB', marginRight: 8 }]} onPress={() => setShowLeadModal(false)}>
+              <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: '#E5E7EB', marginRight: 8, opacity: leadSubmitting ? 0.6 : 1 }]} onPress={() => !leadSubmitting && setShowLeadModal(false)} disabled={leadSubmitting}>
                 <Text style={[styles.primaryBtnText, { color: '#111827' }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
+              <TouchableOpacity style={[styles.primaryBtn, (leadSubmitting || !leadForm.name.trim()) && { opacity: 0.7 }]} disabled={leadSubmitting || !leadForm.name.trim()} onPress={async () => {
+                if (!validateLead()) return;
                 try {
+                  setLeadSubmitting(true);
                   const payload = {
                     college_id: id,
                     name: leadForm.name.trim(),
@@ -1190,12 +1229,19 @@ export default function CollegeDetails() {
                     user_id: 'guest',
                     source: 'app'
                   };
-                  if (!payload.name) return;
                   const res = await fetch(API.url('/api/leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
-                  if (res.ok) { setShowLeadModal(false); setLeadForm({ name: '', email: '', phone: '', message: '' }); }
-                } catch {}
+                  if (res.ok) {
+                    setShowLeadModal(false);
+                    setLeadForm({ name: '', email: '', phone: '', message: '' });
+                    setLeadErrors({});
+                    Alert.alert('Submitted', 'Thanks! We will get back to you soon.');
+                  }
+                } catch {
+                } finally {
+                  setLeadSubmitting(false);
+                }
               }}>
-                <Text style={styles.primaryBtnText}>Submit</Text>
+                {leadSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Submit</Text>}
               </TouchableOpacity>
             </View>
           </View>
