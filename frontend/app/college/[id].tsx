@@ -432,17 +432,63 @@ export default function CollegeDetails() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Year-wise Trends</Text>
         {college?.placement_stats?.length ? (
-          <View style={styles.feeTable}>
-            {college.placement_stats.map((p: any, idx: number) => (
-              <View key={idx} style={styles.feeRow}>
-                <Text style={styles.feeLabel}>{p.year}</Text>
-                <View>
-                  <Text style={styles.feeValue}>{formatPackage(p.avg_package || 0)} avg</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>{p.placement_percentage || college?.placement_percentage}% placed</Text>
-                </View>
+          <>
+            {/* Mini chart: avg vs median per year */}
+            <View style={styles.chartContainer}>
+              {(() => {
+                const stats = (college?.placement_stats || []) as any[];
+                const years = stats.map(s => s.year);
+                const maxVal = Math.max(
+                  1,
+                  ...stats.map(s => Number(s.avg_package || 0)),
+                  ...stats.map(s => Number(s.median_package || s.median || 0))
+                );
+                return (
+                  <View style={styles.chartRow}>
+                    {stats.map((s, i) => {
+                      const avg = Number(s.avg_package || 0);
+                      const med = Number(s.median_package || s.median || 0);
+                      const avgH = Math.max(6, Math.round((avg / maxVal) * 100));
+                      const medH = Math.max(6, Math.round((med / maxVal) * 100));
+                      return (
+                        <View key={`y-${s.year}-${i}`} style={styles.chartBarGroup}>
+                          <View style={styles.chartBarsArea}>
+                            <View style={[styles.barMedian, { height: medH }]} />
+                            <View style={[styles.barAvg, { height: avgH }]} />
+                          </View>
+                          <Text style={styles.chartYear}>{String(s.year)}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
+              <View style={styles.chartLegend}>
+                <View style={[styles.legendDot, { backgroundColor: '#93C5FD' }]} />
+                <Text style={styles.legendText}>Median</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#60A5FA', marginLeft: 12 }]} />
+                <Text style={styles.legendText}>Average</Text>
               </View>
-            ))}
-          </View>
+            </View>
+
+            {/* Detailed list */}
+            <View style={styles.feeTable}>
+              {college.placement_stats.map((p: any, idx: number) => (
+                <View key={`row-${p.year}-${idx}`} style={styles.feeRow}>
+                  <Text style={styles.feeLabel}>{p.year}</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.feeValue}>
+                      {formatPackage(p.avg_package || 0)} avg · {formatPackage(p.median_package || p.median || 0)} median
+                    </Text>
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                      {(p.placement_percentage || college?.placement_percentage || 0)}% placed
+                      {p.internship_rate ? ` · ${p.internship_rate}% internships` : ''}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
         ) : (
           <Text style={styles.description}>Trend data not available</Text>
         )}
@@ -1592,6 +1638,50 @@ const styles = StyleSheet.create({
   placementStats: {
     marginTop: 8,
   },
+  // Mini chart styles
+  chartContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    padding: 12,
+    marginBottom: 12,
+  },
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: 6,
+    height: 140,
+  },
+  chartBarGroup: {
+    width: 36,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  chartBarsArea: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 4,
+  },
+  barMedian: {
+    width: 12,
+    backgroundColor: '#93C5FD',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  barAvg: {
+    width: 12,
+    backgroundColor: '#60A5FA',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  chartYear: { marginTop: 6, fontSize: 11, color: '#6B7280' },
+  chartLegend: { flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingHorizontal: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { fontSize: 12, color: '#6B7280', marginLeft: 6 },
   placementItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
