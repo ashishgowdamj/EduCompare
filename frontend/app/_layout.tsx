@@ -74,6 +74,7 @@ function ThemedRoot() {
         <Stack.Screen name="preferences-setup" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="college/[id]" />
+        <Stack.Screen name="search" />
       </Stack>
     </>
   );

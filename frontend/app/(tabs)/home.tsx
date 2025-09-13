@@ -473,9 +473,8 @@ const HomeScreen = () => {
   };
 
   const handleSearch = () => {
-    // Reset to first page when searching
-    setPage(1);
-    searchColleges(true);
+    // Navigate to search results page
+    router.push({ pathname: '/search', params: { q: searchQuery.trim() } } as any);
     // persist recent searches
     const term = searchQuery.trim();
     if (term.length > 0) {
