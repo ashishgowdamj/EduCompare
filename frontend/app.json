@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.ashishgowda.educompare"
     },
     "web": {
       "bundler": "metro",
@@ -34,14 +35,28 @@
           "backgroundColor": "#0C2240"
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       "expo-web-browser"
     ],
     "androidStatusBar": {
-      "backgroundColor": "#000000",
+      "backgroundColor": "#0C2240",
       "barStyle": "light-content"
     },
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ff249362-3459-4f14-b1a3-b9e9ff55987e"
+      }
     }
   }
 }
