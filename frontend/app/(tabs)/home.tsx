@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePreferences } from '../../contexts/PreferencesContext';
+import { supabase } from '../../utils/supabase';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -230,20 +231,22 @@ const HomeScreen = () => {
           if (suggestAbortRef.current) suggestAbortRef.current.abort();
           const controller = new AbortController();
           suggestAbortRef.current = controller;
-          const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?q=${encodeURIComponent(q)}&limit=5`;
-          const res = await fetch(url, { signal: controller.signal });
-          if (res.ok) {
-            const data: any = await res.json();
-            const serverItems: Suggestion[] = (data.colleges || [])
+          const { data, error } = await supabase
+            .from('colleges')
+            .select('name, city, state')
+            .ilike('name', `%${q}%`)
+            .order('nirf_rank', { ascending: true, nullsFirst: false })
+            .order('name', { ascending: true })
+            .limit(5);
+          if (!error) {
+            const serverItems: Suggestion[] = (data || [])
               .map((c: any) => ({
                 label: c.name,
                 city: [c.city, c.state].filter(Boolean).join(', '),
-                logo_base64: c.logo_base64,
                 type: 'college' as const,
               }))
               .filter((s: Suggestion) => !!s.label);
             const grouped: Suggestion[] = serverItems.length ? [{ label: 'Colleges', type: 'header' }, ...serverItems] : [];
-            // Add local groups beneath server results
             const cta: Suggestion = { label: `Search for “${searchQuery.trim()}”`, type: 'cta' };
             const finalList = [...grouped, ...local].slice(0, 12);
             setSuggestions(finalList.concat(cta));
@@ -359,60 +362,54 @@ const HomeScreen = () => {
   };
 
   const searchColleges = async (reset = false) => {
-    if (reset) {
-      setPage(1);
-      setHasMore(true);
-    }
-
+    if (searchLoading) return;
+    if (reset) { setPage(1); setHasMore(true); }
     setSearchLoading(true);
     try {
-      const queryParams = new URLSearchParams();
-
-      if (searchQuery.trim()) {
-        queryParams.append('q', searchQuery.trim());
-      }
-
-      // Apply filters
-      if (activeFilters.city) queryParams.append('city', activeFilters.city);
-      if (activeFilters.state) queryParams.append('state', activeFilters.state);
-      if (activeFilters.minFees) queryParams.append('min_fees', activeFilters.minFees.toString());
-      if (activeFilters.maxFees) queryParams.append('max_fees', activeFilters.maxFees.toString());
-      if (activeFilters.minRating) queryParams.append('min_rating', activeFilters.minRating.toString());
-      if (activeFilters.maxRating) queryParams.append('max_rating', activeFilters.maxRating.toString());
-      if (activeFilters.universityType) queryParams.append('university_type', activeFilters.universityType);
-      if (activeFilters.rankingFrom) queryParams.append('ranking_from', activeFilters.rankingFrom.toString());
-      if (activeFilters.rankingTo) queryParams.append('ranking_to', activeFilters.rankingTo.toString());
-      if (activeFilters.courses?.length) queryParams.append('courses', activeFilters.courses.join(','));
-      if (activeFilters.accreditation?.length) queryParams.append('accreditation', activeFilters.accreditation.join(','));
-      (['hostel','wifi','library','sports','canteen','medical'] as const).forEach(k => {
-        if ((activeFilters as any)[k]) queryParams.append(k, 'true');
+      const currentPage = reset ? 1 : page;
+      // Primary: RPC
+      const { data, error } = await supabase.rpc('f_search_colleges', {
+        q: searchQuery.trim() || null,
+        p_limit: 10,
+        p_offset: (currentPage - 1) * 10,
       });
-      if (activeFilters.minPlacement != null) queryParams.append('min_placement', String(activeFilters.minPlacement));
-      if (activeFilters.minAvgPackage != null) queryParams.append('min_avg_package', String(activeFilters.minAvgPackage));
-
-      queryParams.append('page', (reset ? 1 : page).toString());
-      queryParams.append('limit', '10');
-
-      // Sorting
-      if (sortBy && sortBy !== 'relevance') queryParams.append('sort', sortBy);
-
-      const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?${queryParams.toString()}`;
-      const response = await fetch(url);
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('Search request', url, 'status', response.status);
+      let rows: any[] = Array.isArray(data) ? data : [];
+      if (error) {
+        // Fallback: direct table query by name
+        let qBuilder = supabase.from('colleges').select('*');
+        if (searchQuery.trim()) qBuilder = qBuilder.ilike('name', `%${searchQuery.trim()}%`);
+        const { data: fb, error: fbErr } = await qBuilder
+          .order('nirf_rank', { ascending: true, nullsFirst: false })
+          .order('name', { ascending: true })
+          .range((currentPage - 1) * 10, currentPage * 10 - 1);
+        if (fbErr) throw fbErr;
+        rows = fb || [];
       }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        if (__DEV__) {
-          // eslint-disable-next-line no-console
-          console.error('Failed to fetch colleges:', errorText);
-        }
-        throw new Error(`Failed to fetch colleges: ${response.status} ${response.statusText}`);
-      }
-
-      const data: CollegeSearchResponse = await response.json();
+      const mapped: College[] = rows.map((r) => ({
+        id: String(r.id ?? r.slug ?? Math.random()),
+        name: r.name || 'Unknown',
+        city: r.city || '-',
+        state: r.state || '-',
+        country: 'India',
+        logo_base64: undefined,
+        ranking: r.nirf_rank ?? undefined,
+        star_rating: Number(r.star_rating ?? 4),
+        annual_fees: Number(r.avg_fees ?? 0),
+        courses_offered: Array.isArray(r.streams) ? r.streams : [],
+        university_type: r.ownership || 'Private',
+        placement_percentage: Number(r.placement_percentage ?? 0),
+        average_package: Number(r.average_package ?? 0),
+        highest_package: Number(r.highest_package ?? 0),
+        hostel_facilities: false,
+        wifi: false,
+        sports_facilities: false,
+        library_facilities: false,
+        canteen: false,
+        medical_facilities: false,
+        established_year: 0,
+        total_students: 0,
+        description: '',
+      }));
 
       const uniqueById = (arr: College[]) => {
         const seen = new Set<string>();
@@ -426,21 +423,12 @@ const HomeScreen = () => {
         return out;
       };
 
-      if (reset) {
-        setColleges(uniqueById(data.colleges));
-      } else {
-        setColleges(prev => uniqueById([...prev, ...data.colleges]));
-      }
-
-      setHasMore(data.page < data.total_pages);
-      if (!reset) {
-        setPage(prev => prev + 1);
-      }
+      if (reset) setColleges(uniqueById(mapped));
+      else setColleges(prev => uniqueById([...prev, ...mapped]));
+      setHasMore(rows.length === 10);
+      if (!reset) setPage(prev => prev + 1);
     } catch (error) {
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.error('Error searching colleges:', error);
-      }
+      console.error('Error searching colleges:', error);
     } finally {
       setSearchLoading(false);
     }

@@ -129,16 +129,16 @@ const CompactCollegeCard: React.FC<CompactCollegeCardProps> = ({
 
         {/* Course Tags */}
         <View style={styles.coursesContainer}>
-          {college.courses_offered.slice(0, 1).map((course, index) => (
+          {(college.courses_offered ?? []).slice(0, 1).map((course, index) => (
             <View key={index} style={styles.courseTag}>
               <Caption style={styles.courseText} numberOfLines={1}>
                 {course.length > 15 ? `${course.substring(0, 15)}...` : course}
               </Caption>
             </View>
           ))}
-          {college.courses_offered.length > 1 && (
+          {(college.courses_offered ?? []).length > 1 && (
             <Caption style={styles.moreCoursesText}>
-              +{college.courses_offered.length - 1} more
+              +{(college.courses_offered ?? []).length - 1} more
             </Caption>
           )}
         </View>

@@ -6,23 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import FilterModal from '../components/FilterModal';
 import CollegeCard from '../components/CollegeCard';
-import { API } from '../utils/api';
+import { supabase } from '../utils/supabase';
 
-type College = {
-  id: string;
-  name: string;
-  city: string;
-  state: string;
-  logo_base64?: string;
-  ranking?: number;
-  star_rating: number;
-  annual_fees: number;
-  courses_offered: string[];
-  university_type: string;
-  placement_percentage: number;
-  average_package: number;
-  highest_package: number;
-};
+type College = any;
 
 type CollegeSearchResponse = {
   colleges: College[];
@@ -44,7 +30,7 @@ export default function SearchScreen() {
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<Record<string, any>>({});
 
-  const EXPO_PUBLIC_BACKEND_URL = API.baseUrl;
+  const PAGE_SIZE = 10;
 
   const uniqueById = (arr: College[]) => {
     const seen = new Set<string>();
@@ -59,36 +45,52 @@ export default function SearchScreen() {
   };
 
   const fetchPage = async (reset = false) => {
+    if (loading) return;
     if (reset) { setPage(1); setHasMore(true); }
     setLoading(true);
     try {
-      const qp = new URLSearchParams();
-      if (query.trim()) qp.append('q', query.trim());
-      // map filters
-      if (filters.city) qp.append('city', filters.city);
-      if (filters.state) qp.append('state', filters.state);
-      if (filters.minFees) qp.append('min_fees', String(filters.minFees));
-      if (filters.maxFees) qp.append('max_fees', String(filters.maxFees));
-      if (filters.minRating) qp.append('min_rating', String(filters.minRating));
-      if (filters.maxRating) qp.append('max_rating', String(filters.maxRating));
-      if (filters.universityType) qp.append('university_type', filters.universityType);
-      if (filters.courses?.length) qp.append('courses', filters.courses.join(','));
-      if (filters.rankingFrom) qp.append('ranking_from', String(filters.rankingFrom));
-      if (filters.rankingTo) qp.append('ranking_to', String(filters.rankingTo));
-      (['hostel','wifi','library','sports','canteen','medical'] as const).forEach(k => {
-        if ((filters as any)[k]) qp.append(k, 'true');
+      const p = reset ? 1 : page;
+      const { data, error } = await supabase.rpc('f_search_colleges', {
+        q: query.trim() || null,
+        p_limit: PAGE_SIZE,
+        p_offset: (p - 1) * PAGE_SIZE,
       });
-      qp.append('page', String(reset ? 1 : page));
-      qp.append('limit', '10');
-
-      const url = `${EXPO_PUBLIC_BACKEND_URL}/api/colleges/search?${qp.toString()}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('search failed');
-      const data: CollegeSearchResponse = await res.json();
-      if (reset) setColleges(uniqueById(data.colleges));
-      else setColleges(prev => uniqueById([...prev, ...data.colleges]));
-      setHasMore(data.page < data.total_pages);
-      if (!reset) setPage(p => p + 1);
+      let rows: any[] = Array.isArray(data) ? data : [];
+      if (error) {
+        console.warn('RPC f_search_colleges failed, falling back to table query:', error?.message || error);
+        // Fallback: simple search over colleges
+        let qBuilder = supabase.from('colleges').select('*');
+        if (query.trim()) {
+          qBuilder = qBuilder.ilike('name', `%${query.trim()}%`);
+        }
+        const { data: fb, error: fbErr } = await qBuilder
+          .order('nirf_rank', { ascending: true, nullsFirst: false })
+          .order('name', { ascending: true })
+          .range((p - 1) * PAGE_SIZE, p * PAGE_SIZE - 1);
+        if (fbErr) throw fbErr;
+        rows = fb || [];
+      }
+      const mapped: College[] = rows.map((r) => ({
+        id: String(r.id ?? r.slug ?? Math.random()),
+        name: r.name || 'Unknown',
+        city: r.city || '-',
+        state: r.state || '-',
+        logo_base64: undefined,
+        ranking: r.nirf_rank ?? undefined,
+        star_rating: Number(r.star_rating ?? 4) as number,
+        annual_fees: Number(r.avg_fees ?? 0) as number,
+        courses_offered: Array.isArray(r.streams) ? r.streams : [],
+        university_type: r.ownership || 'Private',
+        placement_percentage: Number(r.placement_percentage ?? 0) as number,
+        average_package: Number(r.average_package ?? 0) as number,
+        highest_package: Number(r.highest_package ?? 0) as number,
+      }));
+      if (reset) setColleges(uniqueById(mapped));
+      else setColleges(prev => uniqueById([...prev, ...mapped]));
+      setHasMore(rows.length === PAGE_SIZE);
+      if (!reset) setPage(pv => pv + 1);
+    } catch (err) {
+      console.error('Search error detail:', err);
     } finally {
       setLoading(false);
     }
@@ -140,7 +142,6 @@ export default function SearchScreen() {
         data={colleges}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={180}
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}
         ListFooterComponent={loading ? <ActivityIndicator style={{ padding: 16 }} color="#2196F3" /> : null}

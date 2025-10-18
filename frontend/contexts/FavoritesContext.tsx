@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { API } from '../utils/api';
+import { supabase } from '../utils/supabase';
 
 interface College {
   id: string;
@@ -44,25 +45,34 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const refreshFavorites = async () => {
     if (!user) return;
-    
     setIsLoading(true);
     try {
-      const response = await fetch(API.url(`/api/favorites/${user.id}`));
-      if (response.ok) {
-        const data = await response.json();
-        setFavorites(data.favorites || []);
+      // Fetch favorite mappings
+      const { data: favRows, error: favErr } = await supabase
+        .from('favorites')
+        .select('college_id')
+        .eq('user_id', user.id);
+      if (favErr) throw favErr;
+      const ids = (favRows || []).map(r => r.college_id);
+      if (ids.length === 0) {
+        setFavorites([]);
+        await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify([]));
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching favorites:', error);
-      // Fallback to local storage
+      // Fetch college objects
+      const { data: colleges, error: colErr } = await supabase
+        .from('colleges')
+        .select('*')
+        .in('id', ids);
+      if (colErr) throw colErr;
+      setFavorites((colleges as any[]) || []);
+      await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(colleges || []));
+    } catch (e) {
+      // Fallback to local cache
       try {
         const localFavorites = await AsyncStorage.getItem(`favorites_${user.id}`);
-        if (localFavorites) {
-          setFavorites(JSON.parse(localFavorites));
-        }
-      } catch (localError) {
-        console.error('Error loading local favorites:', localError);
-      }
+        if (localFavorites) setFavorites(JSON.parse(localFavorites));
+      } catch {}
     } finally {
       setIsLoading(false);
     }
@@ -71,54 +81,25 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addToFavorites = async (college: College) => {
     if (!user) return;
 
+    // Persist to Supabase
     try {
-      const response = await fetch(API.url('/api/favorites'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          college_id: college.id,
-        }),
-      });
-
-      if (response.ok) {
-        const newFavorites = [...favorites, college];
-        setFavorites(newFavorites);
-        // Save to local storage as backup
-        await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
-      }
-    } catch (error) {
-      console.error('Error adding to favorites:', error);
-      // Fallback to local storage
-      const newFavorites = [...favorites, college];
-      setFavorites(newFavorites);
-      await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
-    }
+      const { error } = await supabase.from('favorites').insert({ user_id: user.id, college_id: college.id });
+      if (error) throw error;
+    } catch {}
+    const newFavorites = [...favorites, college];
+    setFavorites(newFavorites);
+    await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
   };
 
   const removeFromFavorites = async (collegeId: string) => {
     if (!user) return;
 
     try {
-      const response = await fetch(API.url(`/api/favorites/${user.id}/${collegeId}`), {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        const newFavorites = favorites.filter(fav => fav.id !== collegeId);
-        setFavorites(newFavorites);
-        // Save to local storage as backup
-        await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
-      }
-    } catch (error) {
-      console.error('Error removing from favorites:', error);
-      // Fallback to local storage
-      const newFavorites = favorites.filter(fav => fav.id !== collegeId);
-      setFavorites(newFavorites);
-      await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
-    }
+      await supabase.from('favorites').delete().match({ user_id: user.id, college_id: collegeId });
+    } catch {}
+    const newFavorites = favorites.filter(fav => fav.id !== collegeId);
+    setFavorites(newFavorites);
+    await AsyncStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
   };
 
   const isFavorite = (collegeId: string): boolean => {

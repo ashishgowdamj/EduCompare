@@ -91,7 +91,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
   };
 
   const getTopCourses = () => {
-    return college.courses_offered.slice(0, 2);
+    return (college.courses_offered ?? []).slice(0, 2);
   };
 
   const isDark = false;
@@ -185,33 +185,37 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
             <View style={styles.coursesRow}>
               {getTopCourses().map((course, index) => (
                 <View key={index} style={[styles.courseTag, { backgroundColor: chipBg }]}>
-                  <Text style={[styles.courseTagText, { color: primary }]}>{course}</Text>
+                  <Text style={[styles.courseTagText, { color: primary }]}>{String(course)}</Text>
                 </View>
               ))}
-              {college.courses_offered.length > 2 && (
+              {(college.courses_offered ?? []).length > 2 && (
                 <Text style={[styles.moreCourses, { color: textSecondary }]}>
-                  +{college.courses_offered.length - 2} more
+                  +{(college.courses_offered ?? []).length - 2} more
                 </Text>
               )}
             </View>
 
             {/* Tags and Type */}
             <View style={styles.tagsRow}>
-              <View style={[styles.tag, { backgroundColor: getTypeColor(college.university_type) }]}>
-                <Text style={[styles.tagText, { color: getTypeTextColor(college.university_type) }]}>
-                  {college.university_type}
-                </Text>
-              </View>
-              
-              <View style={[styles.tag, { backgroundColor: tagBg }]}>
-                <Text style={[styles.tagText, { color: textSecondary }]}>Est. {college.established_year}</Text>
-              </View>
-              
-              {college.total_students && (
-                <View style={[styles.tag, { backgroundColor: tagBg }]}>
-                  <Text style={[styles.tagText, { color: textSecondary }]}>{formatNumber(college.total_students)} Students</Text>
-                </View>
-              )}
+              {[
+                (
+                  <View key="type" style={[styles.tag, { backgroundColor: getTypeColor(college.university_type || '') }]} > 
+                    <Text style={[styles.tagText, { color: getTypeTextColor(college.university_type || '') }]}> 
+                      {String(college.university_type || '')}
+                    </Text>
+                  </View>
+                ),
+                (!!college.established_year && (
+                  <View key="est" style={[styles.tag, { backgroundColor: tagBg }]}> 
+                    <Text style={[styles.tagText, { color: textSecondary }]}>Est. {String(college.established_year)}</Text>
+                  </View>
+                )),
+                (!!college.total_students && (
+                  <View key="students" style={[styles.tag, { backgroundColor: tagBg }]}> 
+                    <Text style={[styles.tagText, { color: textSecondary }]}>{formatNumber(college.total_students)} Students</Text>
+                  </View>
+                )),
+              ].filter(Boolean) as React.ReactNode[]}
             </View>
 
             {/* Facilities */}
@@ -274,7 +278,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
 };
 
 const getTypeColor = (type: string) => {
-  switch (type.toLowerCase()) {
+  switch ((type || '').toLowerCase()) {
     case 'government': return '#E8F5E8';
     case 'private': return '#E3F2FD';
     case 'deemed': return '#FFF3E0';
@@ -283,7 +287,7 @@ const getTypeColor = (type: string) => {
 };
 
 const getTypeTextColor = (type: string) => {
-  switch (type.toLowerCase()) {
+  switch ((type || '').toLowerCase()) {
     case 'government': return '#2E7D32';
     case 'private': return '#1976D2';
     case 'deemed': return '#F57C00';

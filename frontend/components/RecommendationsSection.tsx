@@ -7,7 +7,7 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { useCompare } from '../contexts/CompareContext';
-import { API } from '../utils/api';
+import { supabase } from '../utils/supabase';
 import CompactCollegeCard from './CompactCollegeCard';
 
 // use API.url for device-friendly base URL
@@ -80,25 +80,16 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
     setError(null);
     
     try {
-      const response = await fetch(API.url('/api/recommendations'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          preferences: preferences,
-          browsing_history: browsingHistory,
-          limit: 5
-        }),
-      });
+      // Simple heuristic: for now mirror trending until personalization is implemented via RPC
+      const { data, error: sbError } = await supabase
+        .from('colleges')
+        .select('*')
+        .order('nirf_rank', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true })
+        .limit(5);
 
-      if (response.ok) {
-        const data = await response.json();
-        setRecommendations(data.recommendations || []);
-      } else {
-        throw new Error('Failed to fetch recommendations');
-      }
+      if (sbError) throw sbError;
+      setRecommendations((data as any) || []);
     } catch (error) {
       console.error('Error fetching recommendations:', error);
       setError('Failed to load recommendations');
@@ -114,14 +105,15 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ onViewA
     setError(null);
     
     try {
-      const response = await fetch(API.url('/api/recommendations/trending?limit=5'));
-      
-      if (response.ok) {
-        const data = await response.json();
-        setRecommendations(data.trending || []);
-      } else {
-        throw new Error('Failed to fetch trending colleges');
-      }
+      const { data, error: sbError } = await supabase
+        .from('colleges')
+        .select('*')
+        .order('nirf_rank', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true })
+        .limit(5);
+
+      if (sbError) throw sbError;
+      setRecommendations((data as any) || []);
     } catch (error) {
       console.error('Error fetching trending colleges:', error);
       setError('Failed to load colleges');

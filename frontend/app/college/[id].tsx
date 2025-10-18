@@ -22,48 +22,65 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCompare } from '../../contexts/CompareContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
+import { useAuth } from '../../contexts/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import { API } from '../../utils/api';
+import { supabase } from '../../utils/supabase';
 
 // Use shared API util for base URL
 const { width } = Dimensions.get('window');
 
 interface College {
-  id: string;
+  // Supabase columns
+  id: string | number;
+  slug?: string;
   name: string;
-  city: string;
-  state: string;
-  country: string;
+  state?: string;
+  city?: string;
+  nirf_rank?: number | null;
+  avg_fees?: number | null;
+  hostel_fees?: number | null;
+  cover_img_url?: string | null;
+  gallery_urls?: string[] | null;
+  streams?: string[] | null;
+  website?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  // Legacy/UI fields retained for compatibility
+  country?: string;
   logo_base64?: string;
-  images_base64: string[];
+  images_base64?: string[];
   ranking?: number;
-  star_rating: number;
-  annual_fees: number;
-  courses_offered: string[];
-  university_type: string;
-  established_year: number;
-  campus_size: string;
-  total_students: number;
-  faculty_count: number;
-  placement_percentage: number;
-  average_package: number;
-  highest_package: number;
-  hostel_facilities: boolean;
-  library_facilities: boolean;
-  sports_facilities: boolean;
-  wifi: boolean;
-  canteen: boolean;
-  medical_facilities: boolean;
-  description: string;
-  admission_process: string;
-  contact_email: string;
-  contact_phone: string;
-  website: string;
-  address: string;
-  accreditation: string[];
+  star_rating?: number;
+  annual_fees?: number;
+  courses_offered?: string[];
+  university_type?: string;
+  established_year?: number;
+  campus_size?: string;
+  total_students?: number;
+  faculty_count?: number;
+  placement_percentage?: number;
+  average_package?: number;
+  highest_package?: number;
+  hostel_facilities?: boolean;
+  library_facilities?: boolean;
+  sports_facilities?: boolean;
+  wifi?: boolean;
+  canteen?: boolean;
+  medical_facilities?: boolean;
+  description?: string;
+  admission_process?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  accreditation?: string[];
   departments?: string[];
   campus_life?: string[];
   video_urls?: string[];
+  placement_stats?: any[];
+  course_fees?: any[];
 }
 
 export default function CollegeDetails() {
@@ -106,6 +123,7 @@ export default function CollegeDetails() {
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
   const { addToBrowsingHistory } = usePreferences();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (id) {
@@ -149,11 +167,14 @@ export default function CollegeDetails() {
 
   const fetchCollegeDetails = async () => {
     try {
-      const response = await fetch(API.url(`/api/colleges/${id}`));
-      if (response.ok) {
-        const data = await response.json();
-        setCollege(data);
-      }
+      const numericId = Number(id);
+      const { data, error } = await supabase
+        .from('colleges')
+        .select('*')
+        .eq('id', isNaN(numericId) ? id : numericId)
+        .single();
+      if (error) throw error;
+      setCollege((data as any) || null);
     } catch (error) {
       console.error('Error fetching college details:', error);
     } finally {
@@ -165,17 +186,27 @@ export default function CollegeDetails() {
     if (!id) return;
     try {
       setCutoffsLoading(true);
-      const qp = new URLSearchParams();
-      qp.append('college_id', String(id));
-      if (cutoffFilters.year) qp.append('year', String(cutoffFilters.year));
-      cutoffFilters.exams.forEach(e => qp.append('exam', e));
-      cutoffFilters.categories.forEach(c => qp.append('category', c));
-      cutoffFilters.branches.forEach(b => qp.append('branch', b));
-      const res = await fetch(API.url(`/api/cutoffs?${qp.toString()}`));
-      if (res.ok) {
-        const data = await res.json();
-        setCutoffs(data.items || []);
-      }
+      const numericId = Number(id);
+      let query = supabase
+        .from('cutoffs')
+        .select('*')
+        .eq('college_id', isNaN(numericId) ? id : numericId);
+      if (cutoffFilters.year) query = query.eq('year', cutoffFilters.year);
+      if (cutoffFilters.exams.length) query = query.in('exam', cutoffFilters.exams);
+      if (cutoffFilters.categories.length) query = query.in('category', cutoffFilters.categories);
+      const { data, error } = await query.order('year', { ascending: false }).limit(200);
+      if (error) throw error;
+      // Map to UI-expected fields
+      const items = (data || []).map((r: any) => ({
+        year: r.year,
+        round: r.round,
+        exam: r.exam,
+        category: r.category,
+        branch: r.branch, // may be undefined in our schema
+        closing_rank: null,
+        closing_percentile: r.rank_or_percentile,
+      }));
+      setCutoffs(items);
     } catch (e) {
       console.log('cutoffs load error', e);
     } finally {
@@ -185,11 +216,17 @@ export default function CollegeDetails() {
 
   const loadCutoffOptions = async () => {
     try {
-      const res = await fetch(API.url(`/api/cutoffs/options?college_id=${id}`));
-      if (res.ok) {
-        const data = await res.json();
-        setCutoffOptions({ years: data.years || [], exams: data.exams || [], categories: data.categories || [], branches: data.branches || [] });
-      }
+      const numericId = Number(id);
+      // Fetch distinct years, exams, categories for this college
+      const [yearsRes, examsRes, catsRes] = await Promise.all([
+        supabase.from('cutoffs').select('year').eq('college_id', isNaN(numericId) ? id : numericId),
+        supabase.from('cutoffs').select('exam').eq('college_id', isNaN(numericId) ? id : numericId),
+        supabase.from('cutoffs').select('category').eq('college_id', isNaN(numericId) ? id : numericId),
+      ]);
+      const years = Array.from(new Set((yearsRes.data || []).map((r: any) => r.year).filter(Boolean))).sort((a: number, b: number) => b - a);
+      const exams = Array.from(new Set((examsRes.data || []).map((r: any) => r.exam).filter(Boolean))).sort();
+      const categories = Array.from(new Set((catsRes.data || []).map((r: any) => r.category).filter(Boolean))).sort();
+      setCutoffOptions({ years, exams, categories, branches: [] });
     } catch {}
   };
 
@@ -197,13 +234,15 @@ export default function CollegeDetails() {
     if (!id) return;
     try {
       setSeatsLoading(true);
-      const qp = new URLSearchParams();
-      qp.append('college_id', String(id));
-      const res = await fetch(API.url(`/api/seats?${qp.toString()}`));
-      if (res.ok) {
-        const data = await res.json();
-        setSeats(data.items || []);
-      }
+      const numericId = Number(id);
+      const { data, error } = await supabase
+        .from('seats')
+        .select('*')
+        .eq('college_id', isNaN(numericId) ? id : numericId)
+        .order('year', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      setSeats((data as any[]) || []);
     } catch (e) {
       console.log('seats load error', e);
     } finally {
@@ -214,11 +253,28 @@ export default function CollegeDetails() {
   const loadReviews = async () => {
     try {
       setReviewsLoading(true);
-      const res = await fetch(API.url(`/api/reviews/${id}?page=1&limit=10&sort=recent`));
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data.reviews || []);
+      const numericId = Number(id);
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('college_id', isNaN(numericId) ? id : numericId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      const list = (data as any[]) || [];
+      // augment helpful counts
+      const ids = list.map(r => r.id);
+      if (ids.length) {
+        const { data: votes } = await supabase
+          .from('review_votes')
+          .select('review_id')
+          .in('review_id', ids);
+        const counts = new Map<number, number>();
+        (votes || []).forEach(v => counts.set(v.review_id as number, (counts.get(v.review_id as number) || 0) + 1));
+        list.forEach(r => (r.helpful_count = counts.get(r.id as number) || 0));
       }
+      setReviews(list);
     } catch (e) {
       console.log('reviews load error', e);
     } finally {
@@ -264,20 +320,22 @@ export default function CollegeDetails() {
   const handleFavoriteToggle = () => {
     if (!college) return;
     
-    if (isFavorite(college.id)) {
-      removeFromFavorites(college.id);
+    const cid = String(college.id);
+    if (isFavorite(cid)) {
+      removeFromFavorites(cid);
     } else {
-      addToFavorites(college);
+      addToFavorites({ ...college, id: cid } as any);
     }
   };
 
   const handleCompareToggle = () => {
     if (!college) return;
     
-    if (isInCompare(college.id)) {
-      removeFromCompare(college.id);
+    const cid = String(college.id);
+    if (isInCompare(cid)) {
+      removeFromCompare(cid);
     } else {
-      addToCompare(college);
+      addToCompare({ ...college, id: cid } as any);
     }
   };
 
@@ -355,7 +413,7 @@ export default function CollegeDetails() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Courses Offered</Text>
         <View style={styles.coursesGrid}>
-          {college?.courses_offered.map((course, index) => (
+          {(college?.courses_offered ?? []).map((course, index) => (
             <View key={index} style={styles.courseChip}>
               <Text style={styles.courseText}>{course}</Text>
             </View>
@@ -370,7 +428,7 @@ export default function CollegeDetails() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Popular Courses</Text>
         <View style={styles.coursesGrid}>
-          {(college?.courses_offered || []).slice(0, 8).map((course, i) => (
+          {(college?.courses_offered ?? []).slice(0, 8).map((course, i) => (
             <View key={i} style={styles.courseChip}>
               <Text style={styles.courseText}>{course}</Text>
             </View>
@@ -522,7 +580,8 @@ export default function CollegeDetails() {
               cutoffFilters.exams.forEach(e => qp.append('exam', e));
               cutoffFilters.categories.forEach(c => qp.append('category', c));
               cutoffFilters.branches.forEach(b => qp.append('branch', b));
-              Linking.openURL(API.url(`/api/cutoffs/export?${qp.toString()}`)).catch(() => {});
+              // Export disabled (deprecated REST). Implement Supabase CSV later.
+              Alert.alert('Export unavailable', 'CSV export will be added with Supabase soon.');
             }}
             style={[styles.primaryBtn, { paddingVertical: 8, paddingHorizontal: 12 }]}
           >
@@ -627,7 +686,7 @@ export default function CollegeDetails() {
             onPress={() => {
               const qp = new URLSearchParams();
               qp.append('college_id', String(id));
-              Linking.openURL(API.url(`/api/seats/export?${qp.toString()}`)).catch(() => {});
+              Alert.alert('Export unavailable', 'CSV export will be added with Supabase soon.');
             }}
             style={[styles.primaryBtn, { paddingVertical: 8, paddingHorizontal: 12 }]}
           >
@@ -724,7 +783,11 @@ export default function CollegeDetails() {
               ) : null}
               <View style={styles.reviewFooter}>
                 <TouchableOpacity style={styles.helpfulBtn} onPress={async () => {
-                  try { await fetch(API.url(`/api/reviews/${r.id}/helpful`), { method: 'POST' }); loadReviews(); } catch {}
+                  try {
+                    if (!user?.id) { Alert.alert('Login required', 'Please sign in to vote.'); return; }
+                    await supabase.from('review_votes').upsert({ user_id: user.id, review_id: r.id });
+                    loadReviews();
+                  } catch {}
                 }}>
                   <Ionicons name="thumbs-up-outline" size={14} color="#6B7280" />
                   <Text style={styles.helpfulText}>Helpful ({r.helpful_count || 0})</Text>
@@ -796,22 +859,27 @@ export default function CollegeDetails() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
                 try {
+                  if (!user?.id) { Alert.alert('Login required', 'Please sign in to submit a review.'); return; }
                   const payload: any = {
-                    college_id: id,
-                    user_id: 'guest',
-                    title: reviewForm.title || undefined,
-                    body: reviewForm.body || undefined,
-                    rating_overall: Math.max(0, Math.min(5, reviewForm.rating || 0)),
+                    college_id: Number(id) || id,
+                    user_id: user.id,
+                    title: reviewForm.title || null,
+                    body: reviewForm.body || null,
+                    rating_overall: Math.max(0, Math.min(5, Number(reviewForm.rating || 0))) || null,
+                    rating_academics: (reviewForm as any).rating_academics != null ? Math.max(0, Math.min(5, Number((reviewForm as any).rating_academics))) : null,
+                    rating_placements: (reviewForm as any).rating_placements != null ? Math.max(0, Math.min(5, Number((reviewForm as any).rating_placements))) : null,
+                    rating_infra: (reviewForm as any).rating_infra != null ? Math.max(0, Math.min(5, Number((reviewForm as any).rating_infra))) : null,
+                    rating_faculty: (reviewForm as any).rating_faculty != null ? Math.max(0, Math.min(5, Number((reviewForm as any).rating_faculty))) : null,
+                    pros: (reviewForm as any).pros ? String((reviewForm as any).pros).split(',').map((s: string) => s.trim()).filter(Boolean).join(',') : null,
+                    cons: (reviewForm as any).cons ? String((reviewForm as any).cons).split(',').map((s: string) => s.trim()).filter(Boolean).join(',') : null,
+                    status: 'pending',
                   };
-                  if ((reviewForm as any).rating_academics != null) payload.rating_academics = Math.max(0, Math.min(5, Number((reviewForm as any).rating_academics)));
-                  if ((reviewForm as any).rating_placements != null) payload.rating_placements = Math.max(0, Math.min(5, Number((reviewForm as any).rating_placements)));
-                  if ((reviewForm as any).rating_infra != null) payload.rating_infra = Math.max(0, Math.min(5, Number((reviewForm as any).rating_infra)));
-                  if ((reviewForm as any).rating_faculty != null) payload.rating_faculty = Math.max(0, Math.min(5, Number((reviewForm as any).rating_faculty)));
-                  if ((reviewForm as any).pros) payload.pros = String((reviewForm as any).pros).split(',').map(s => s.trim()).filter(Boolean);
-                  if ((reviewForm as any).cons) payload.cons = String((reviewForm as any).cons).split(',').map(s => s.trim()).filter(Boolean);
-                  const res = await fetch(API.url('/api/reviews'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
-                  if (res.ok) { setShowReviewModal(false); setReviewForm({ title: '', body: '', rating: 4.5 }); loadReviews(); }
-                } catch {}
+                  const { error } = await supabase.from('reviews').insert(payload);
+                  if (error) throw error;
+                  setShowReviewModal(false);
+                  setReviewForm({ title: '', body: '', rating: 4.5 });
+                  loadReviews();
+                } catch (e) { Alert.alert('Review failed', 'Could not submit review right now.'); }
               }}>
                 <Text style={styles.primaryBtnText}>Submit</Text>
               </TouchableOpacity>
@@ -1151,11 +1219,13 @@ export default function CollegeDetails() {
         <Text style={styles.headerTitle}>College Details</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={handleFavoriteToggle} style={styles.headerButton}>
-            <Ionicons 
-              name={isFavorite(college.id) ? "heart" : "heart-outline"} 
-              size={24} 
-              color={isFavorite(college.id) ? "#FF5722" : "#666"} 
-            />
+            {(() => { const cid = String(college.id); return (
+              <Ionicons 
+                name={isFavorite(cid) ? "heart" : "heart-outline"} 
+                size={24} 
+                color={isFavorite(cid) ? "#FF5722" : "#666"} 
+              />
+            ); })()}
           </TouchableOpacity>
         </View>
       </View>
@@ -1185,8 +1255,8 @@ export default function CollegeDetails() {
                 {college.city}, {college.state}
               </Text>
               <View style={styles.ratingRow}>
-                {renderStars(college.star_rating)}
-                <Text style={styles.ratingText}>({college.star_rating})</Text>
+                {renderStars(college.star_rating || 0)}
+                <Text style={styles.ratingText}>({college.star_rating || 0})</Text>
               </View>
             </View>
           </View>
@@ -1253,19 +1323,19 @@ export default function CollegeDetails() {
         ]}
       >
         <TouchableOpacity 
-          style={[styles.compareButton, isInCompare(college.id) && styles.compareButtonActive]}
+          style={[styles.compareButton, isInCompare(String(college.id)) && styles.compareButtonActive]}
           onPress={handleCompareToggle}
         >
           <Ionicons 
             name="analytics" 
             size={18} 
-            color={isInCompare(college.id) ? "#fff" : "#2196F3"} 
+            color={isInCompare(String(college.id)) ? "#fff" : "#2196F3"} 
           />
           <Text style={[
             styles.compareButtonText, 
-            isInCompare(college.id) && styles.compareButtonTextActive
+            isInCompare(String(college.id)) && styles.compareButtonTextActive
           ]}>
-            {isInCompare(college.id) ? 'Added to Compare' : 'Add to Compare'}
+            {isInCompare(String(college.id)) ? 'Added to Compare' : 'Add to Compare'}
           </Text>
         </TouchableOpacity>
         

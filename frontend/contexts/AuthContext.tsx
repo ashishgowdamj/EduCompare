@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../utils/supabase';
 
 interface User {
   id: string;
@@ -52,30 +53,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
-    // Simulate login - in real app, call your API
-    const userData: User = {
-      id: Date.now().toString(),
-      name: email.split('@')[0],
-      email,
-    };
-    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    const authUser = data.user;
+    if (!authUser) throw new Error('Login failed');
+    // ensure profile row exists
+    try {
+      await supabase.from('profiles').upsert({ id: authUser.id, name: authUser.email?.split('@')[0] || null }).select().single();
+    } catch {}
+    const userData: User = { id: authUser.id, name: authUser.email?.split('@')[0] || '', email: authUser.email || '' };
     await AsyncStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // Simulate registration - in real app, call your API
-    const userData: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-    };
-    
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    const authUser = data.user;
+    if (!authUser) return; // if email confirmation required
+    try {
+      await supabase.from('profiles').upsert({ id: authUser.id, name }).select().single();
+    } catch {}
+    const userData: User = { id: authUser.id, name: name || (authUser.email?.split('@')[0] || ''), email: authUser.email || '' };
     await AsyncStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };
 
   const logout = async () => {
+    await supabase.auth.signOut().catch(() => {});
     await AsyncStorage.removeItem('user');
     setUser(null);
   };
